@@ -100,8 +100,8 @@ module.exports = {
     const generatePreviewEmbed = () =>
       new EmbedBuilder()
         .setColor(settings.color)
-        .setTitle(settings.title)
-        .setDescription(settings.description)
+        .setTitle(settings.title || null) // يسمح بحذف العنوان
+        .setDescription(settings.description || null) // يسمح بحذف الوصف
         .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() })
         .setTimestamp()
         .setThumbnail(settings.thumbnail ? interaction.guild.iconURL() : null)
@@ -157,7 +157,6 @@ module.exports = {
               });
 
             case "send_panel": {
-              // التحقق من المتطلبات بدقة
               const missing = [];
               if (!settings.supportRoleId) missing.push("رتبة الدعم");
               if (!settings.categoryId) missing.push("فئة القنوات");
@@ -176,7 +175,7 @@ module.exports = {
               }
 
               await componentInteraction.deferUpdate();
-              break; // الخروج من while للإرسال
+              break;
             }
 
             case "edit_basics": {
@@ -199,27 +198,41 @@ module.exports = {
 
             case "edit_advanced": {
               await componentInteraction.deferUpdate();
+              // --- بناء خيارات متقدمة مع الحالة الحالية ---
+              const advOptions = [
+                { label: "عنوان البانر", value: "title", emoji: "🏷️" },
+                { label: "وصف البانر", value: "description", emoji: "📝" },
+                { label: "لون التضمين", value: "color", emoji: "🎨" },
+                { label: "صورة البانر", value: "embedImage", emoji: "🖼️" },
+                {
+                  label: `أيقونة السيرفر ${settings.thumbnail ? "✅" : "❌"}`,
+                  value: "thumbnail",
+                  emoji: "🖼️",
+                },
+                {
+                  label: `نوع رسالة الترحيب (${settings.welcomeType === "embed" ? "تضمين" : "نصية"})`,
+                  value: "welcomeType",
+                  emoji: "💬",
+                },
+                {
+                  label: `سؤال السبب ${settings.askReason ? "✅" : "❌"}`,
+                  value: "askReason",
+                  emoji: "❓",
+                },
+                { label: "رسالة الترحيب", value: "welcomeMessage", emoji: "📩" },
+              ];
+
               const row = new ActionRowBuilder().addComponents(
                 new StringSelectMenuBuilder()
                   .setCustomId("advanced_select")
                   .setPlaceholder("اختر العنصر لتعديله")
-                  .addOptions([
-                    { label: "عنوان البانر", value: "title", emoji: "🏷️" },
-                    { label: "وصف البانر", value: "description", emoji: "📝" },
-                    { label: "لون التضمين", value: "color", emoji: "🎨" },
-                    { label: "صورة البانر", value: "embedImage", emoji: "🖼️" },
-                    { label: "أيقونة السيرفر", value: "thumbnail", emoji: "🖼️" },
-                    { label: "نوع رسالة الترحيب", value: "welcomeType", emoji: "💬" },
-                    { label: "سؤال السبب", value: "askReason", emoji: "❓" },
-                    { label: "رسالة الترحيب", value: "welcomeMessage", emoji: "📩" },
-                  ])
+                  .addOptions(advOptions)
               );
               await componentInteraction.editReply({ components: [row, mainButtons()] });
               continue;
             }
 
             default: {
-              // أزرار التصفح والبحث والرجوع
               if (btnId.startsWith("page_prev_") || btnId.startsWith("page_next_") || btnId.startsWith("search_") || btnId === "back_to_main") {
                 await componentInteraction.deferUpdate();
                 if (btnId === "back_to_main") {
@@ -265,7 +278,6 @@ module.exports = {
               continue;
             }
           }
-          // إذا وصلنا هنا من حالة send_panel بعد التحقق، نخرج من while
           if (btnId === "send_panel") break;
         }
 
@@ -274,45 +286,84 @@ module.exports = {
           const value = componentInteraction.values[0];
           const customId = componentInteraction.customId;
 
-          // خيارات تحتاج Modal
+          // خيارات تحتاج Modal (جميعها أصبحت غير إلزامية وتظهر النص الحالي)
           const needsModal = ["buttonName", "buttonEmoji", "title", "description", "embedImage", "welcomeMessage"];
           if (needsModal.includes(value)) {
             let modal;
+            const currentValue = {
+              buttonName: settings.buttonName,
+              buttonEmoji: settings.buttonEmoji,
+              title: settings.title,
+              description: settings.description,
+              embedImage: settings.embedImage,
+              welcomeMessage: settings.welcomeMessage,
+            }[value];
+
             switch (value) {
               case "buttonName":
                 modal = new ModalBuilder().setCustomId("modal_buttonName").setTitle("تغيير اسم الزر");
                 modal.addComponents(new ActionRowBuilder().addComponents(
-                  new TextInputBuilder().setCustomId("input").setLabel("اسم الزر الجديد").setStyle(TextInputStyle.Short).setRequired(true)
+                  new TextInputBuilder()
+                    .setCustomId("input")
+                    .setLabel("اسم الزر الجديد")
+                    .setStyle(TextInputStyle.Short)
+                    .setRequired(false)
+                    .setValue(currentValue)
                 ));
                 break;
               case "buttonEmoji":
                 modal = new ModalBuilder().setCustomId("modal_buttonEmoji").setTitle("إضافة إيموجي للزر");
                 modal.addComponents(new ActionRowBuilder().addComponents(
-                  new TextInputBuilder().setCustomId("input").setLabel("أدخل الإيموجي (اختياري)").setStyle(TextInputStyle.Short).setRequired(false)
+                  new TextInputBuilder()
+                    .setCustomId("input")
+                    .setLabel("أدخل الإيموجي (اختياري)")
+                    .setStyle(TextInputStyle.Short)
+                    .setRequired(false)
+                    .setValue(currentValue)
                 ));
                 break;
               case "title":
                 modal = new ModalBuilder().setCustomId("modal_title").setTitle("تغيير العنوان");
                 modal.addComponents(new ActionRowBuilder().addComponents(
-                  new TextInputBuilder().setCustomId("input").setLabel("عنوان البانر الجديد").setStyle(TextInputStyle.Short).setRequired(true)
+                  new TextInputBuilder()
+                    .setCustomId("input")
+                    .setLabel("عنوان البانر (اتركه فارغاً للإخفاء)")
+                    .setStyle(TextInputStyle.Short)
+                    .setRequired(false)
+                    .setValue(currentValue)
                 ));
                 break;
               case "description":
                 modal = new ModalBuilder().setCustomId("modal_description").setTitle("تغيير الوصف");
                 modal.addComponents(new ActionRowBuilder().addComponents(
-                  new TextInputBuilder().setCustomId("input").setLabel("وصف البانر الجديد").setStyle(TextInputStyle.Paragraph).setRequired(true)
+                  new TextInputBuilder()
+                    .setCustomId("input")
+                    .setLabel("وصف البانر (اتركه فارغاً للإخفاء)")
+                    .setStyle(TextInputStyle.Paragraph)
+                    .setRequired(false)
+                    .setValue(currentValue)
                 ));
                 break;
               case "embedImage":
                 modal = new ModalBuilder().setCustomId("modal_embedImage").setTitle("رابط صورة البانر");
                 modal.addComponents(new ActionRowBuilder().addComponents(
-                  new TextInputBuilder().setCustomId("input").setLabel("أدخل رابط الصورة المباشر").setStyle(TextInputStyle.Short).setRequired(false)
+                  new TextInputBuilder()
+                    .setCustomId("input")
+                    .setLabel("رابط الصورة (اتركه فارغاً للحذف)")
+                    .setStyle(TextInputStyle.Short)
+                    .setRequired(false)
+                    .setValue(currentValue)
                 ));
                 break;
               case "welcomeMessage":
                 modal = new ModalBuilder().setCustomId("modal_welcome").setTitle("رسالة الترحيب");
                 modal.addComponents(new ActionRowBuilder().addComponents(
-                  new TextInputBuilder().setCustomId("input").setLabel("رسالة الترحيب داخل التذكرة").setStyle(TextInputStyle.Paragraph).setRequired(true)
+                  new TextInputBuilder()
+                    .setCustomId("input")
+                    .setLabel("رسالة الترحيب (اتركها فارغة لعدم وجود رسالة)")
+                    .setStyle(TextInputStyle.Paragraph)
+                    .setRequired(false)
+                    .setValue(currentValue)
                 ));
                 break;
             }
@@ -476,7 +527,7 @@ module.exports = {
     const randomId = `ticket_${Math.random().toString(36).substr(2, 9)}`;
     const btn = new ButtonBuilder()
       .setCustomId(randomId)
-      .setLabel(settings.buttonName)
+      .setLabel(settings.buttonName || "فتح تذكرة") // تجنب زر فارغ
       .setStyle(ButtonStyle[settings.buttonStyle]);
     if (settings.buttonEmoji) btn.setEmoji(settings.buttonEmoji);
 
@@ -520,7 +571,6 @@ module.exports = {
       });
 
       if (saveInteraction.customId === "save_preset") {
-        // نافذة تسمية الإعداد
         const nameModal = new ModalBuilder()
           .setCustomId("modal_preset_name")
           .setTitle("تسمية الإعداد المسبق");
@@ -538,7 +588,6 @@ module.exports = {
         const modalSubmit = await saveInteraction.awaitModalSubmit({ time: 60_000 });
         const presetName = modalSubmit.fields.getTextInputValue("preset_name").trim();
 
-        // استرجاع الإعدادات المسبقة الحالية من قاعدة البيانات
         const presets = (await keyValueService.get("ticketPresets", interaction.guild.id)) || {};
         presets[presetName] = {
           title: settings.title,
@@ -566,7 +615,6 @@ module.exports = {
           embeds: [new EmbedBuilder().setColor("#00FF00").setDescription("✅ تم حفظ الإعداد.")],
         });
       } else {
-        // ضغط على "إنهاء"
         await saveInteraction.deferUpdate();
         await interaction.editReply({
           components: [],
@@ -574,7 +622,6 @@ module.exports = {
         });
       }
     } catch {
-      // إذا لم يستجب المستخدم خلال 120 ثانية، نغلق الأزرار
       await interaction.editReply({
         components: [],
         embeds: [new EmbedBuilder().setColor("#00FF00").setDescription("✅ تم إنشاء نظام التذاكر.")],
