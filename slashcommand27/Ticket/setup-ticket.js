@@ -391,17 +391,26 @@ module.exports = {
                 break;
             }
             await componentInteraction.showModal(modal);
-            const modalSubmit = await componentInteraction.awaitModalSubmit({ time: 120_000 });
-            const input = modalSubmit.fields.getTextInputValue("input");
-            switch (modalSubmit.customId) {
-              case "modal_buttonName": settings.buttonName = input; break;
-              case "modal_buttonEmoji": settings.buttonEmoji = input; break;
-              case "modal_title": settings.title = input; break;
-              case "modal_description": settings.description = input; break;
-              case "modal_embedImage": settings.embedImage = input; break;
+            try {
+              const modalSubmit = await componentInteraction.awaitModalSubmit({ time: 120_000 });
+              const input = modalSubmit.fields.getTextInputValue("input");
+              switch (modalSubmit.customId) {
+                case "modal_buttonName": settings.buttonName = input; break;
+                case "modal_buttonEmoji": settings.buttonEmoji = input; break;
+                case "modal_title": settings.title = input; break;
+                case "modal_description": settings.description = input; break;
+                case "modal_embedImage": settings.embedImage = input; break;
+              }
+              await modalSubmit.update({
+                embeds: [generatePreviewEmbed()],
+                components: [mainButtons()],
+              });
+            } catch (error) {
+              if (error.code === "INTERACTION_NOT_REPLIED") {
+                // إذا لم يتم الرد لسبب ما
+                await interaction.editReply({ components: [mainButtons()] });
+              }
             }
-            await modalSubmit.deferUpdate();
-            await modalSubmit.editReply({ embeds: [generatePreviewEmbed()], components: [mainButtons()] });
             continue;
           }
 
@@ -418,7 +427,6 @@ module.exports = {
                 });
               });
             }
-            // إضافة خيار التخصيص اليدوي
             options.push({
               label: "✍️ تخصيص يدوي (كتابة نص)",
               value: "__custom__",
@@ -537,11 +545,20 @@ module.exports = {
         if (componentInteraction.type === 5 && componentInteraction.customId === "modal_welcome") {
           const input = componentInteraction.fields.getTextInputValue("input");
           settings.welcomeMessage = input;
-          await componentInteraction.deferUpdate();
-          await componentInteraction.editReply({
-            embeds: [generatePreviewEmbed()],
-            components: [mainButtons()],
-          });
+          try {
+            await componentInteraction.update({
+              embeds: [generatePreviewEmbed()],
+              components: [mainButtons()],
+            });
+          } catch (e) {
+            if (e.code === "INTERACTION_NOT_REPLIED") {
+              await componentInteraction.reply({
+                embeds: [generatePreviewEmbed()],
+                components: [mainButtons()],
+                ephemeral: true,
+              });
+            }
+          }
           continue;
         }
 
@@ -555,26 +572,46 @@ module.exports = {
           cache.filtered = filtered.length > 0 ? filtered : null;
           cache.page = 0;
 
-          await componentInteraction.deferUpdate();
           if (filtered.length === 0) {
-            await componentInteraction.editReply({
-              components: [
-                new ActionRowBuilder().addComponents(
-                  new ButtonBuilder().setCustomId("back_to_main").setLabel("↩️ لم يتم العثور، رجوع").setStyle(ButtonStyle.Danger)
-                ),
-              ],
-            });
+            try {
+              await componentInteraction.update({
+                components: [
+                  new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId("back_to_main").setLabel("↩️ لم يتم العثور، رجوع").setStyle(ButtonStyle.Danger)
+                  ),
+                ],
+              });
+            } catch (e) {
+              if (e.code === "INTERACTION_NOT_REPLIED") {
+                await componentInteraction.reply({
+                  content: "لم يتم العثور على نتائج.",
+                  ephemeral: true,
+                });
+              }
+            }
             continue;
           }
 
           if (filtered.length <= 25) {
             const menu = buildSelectMenu(filtered, `select_${type}`, `اختر ${type === "roles" ? "الرتبة" : "الفئة"}`);
-            await componentInteraction.editReply({ components: [menu, mainButtons()] });
+            try {
+              await componentInteraction.update({ components: [menu, mainButtons()] });
+            } catch (e) {
+              if (e.code === "INTERACTION_NOT_REPLIED") {
+                await componentInteraction.reply({ components: [menu, mainButtons()], ephemeral: true });
+              }
+            }
           } else {
             const { items } = paginate(filtered, 0);
             const menu = buildSelectMenu(items, `select_${type}`, `اختر ${type === "roles" ? "الرتبة" : "الفئة"}`);
             const pagRow = createPaginationRow(0, Math.ceil(filtered.length / 25), type);
-            await componentInteraction.editReply({ components: [menu, pagRow] });
+            try {
+              await componentInteraction.update({ components: [menu, pagRow] });
+            } catch (e) {
+              if (e.code === "INTERACTION_NOT_REPLIED") {
+                await componentInteraction.reply({ components: [menu, pagRow], ephemeral: true });
+              }
+            }
           }
           continue;
         }
@@ -607,7 +644,7 @@ module.exports = {
       Ask: settings.askReason,
     });
 
-    // ---- زر الحفظ والإنهاء (بدون تغيير) ----
+    // ---- عرض أزرار الحفظ والإنهاء (استخدام followUp لضمان الظهور) ----
     const saveRow = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId("save_preset")
@@ -619,13 +656,15 @@ module.exports = {
         .setStyle(ButtonStyle.Secondary)
     );
 
-    await interaction.editReply({
+    const saveMessage = await interaction.followUp({
       components: [saveRow],
       embeds: [
         new EmbedBuilder()
           .setColor("#00FF00")
           .setDescription("✅ تم إنشاء نظام التذاكر بنجاح! يمكنك حفظ هذا الإعداد لاستخدامه لاحقاً."),
       ],
+      ephemeral: true,
+      fetchReply: true,
     });
 
     try {
@@ -675,19 +714,19 @@ module.exports = {
           content: `✅ تم حفظ الإعداد المسبق باسم \`${presetName}\` بنجاح!`,
           flags: MessageFlags.Ephemeral,
         });
-        await interaction.editReply({
+        await saveMessage.edit({
           components: [],
           embeds: [new EmbedBuilder().setColor("#00FF00").setDescription("✅ تم حفظ الإعداد.")],
         });
       } else {
         await saveInteraction.deferUpdate();
-        await interaction.editReply({
+        await saveMessage.edit({
           components: [],
           embeds: [new EmbedBuilder().setColor("#00FF00").setDescription("✅ تم إنهاء الإعداد.")],
         });
       }
     } catch {
-      await interaction.editReply({
+      await saveMessage.edit({
         components: [],
         embeds: [new EmbedBuilder().setColor("#00FF00").setDescription("✅ تم إنشاء نظام التذاكر.")],
       });
