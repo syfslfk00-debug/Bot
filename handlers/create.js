@@ -1,6 +1,6 @@
 const keyValueService = require("../services/keyValueService");
 
-const { 
+const {
     StringSelectMenuOptionBuilder,
     StringSelectMenuBuilder,
     SlashCommandBuilder,
@@ -22,9 +22,9 @@ module.exports = (client27) => {
     client27.on(Events.InteractionCreate, async (interaction) => {
         if ((interaction.isButton() || interaction.isStringSelectMenu()) && interaction.customId.startsWith('ticket')) {
             const customId = interaction.isStringSelectMenu() ? interaction.values[0] : interaction.customId;
-        if (customId === 'reset') {
-            return; 
-        }
+            if (customId === 'reset') {
+                return;
+            }
             const data = await keyValueService.get('ticketDB', `Ticket_${interaction.channel.id}_${customId}`);
             if (!data) return interaction.reply({ content: `Please Setup Again`, ephemeral: true });
 
@@ -51,7 +51,7 @@ module.exports = (client27) => {
             const buttonCustomId = interaction.customId.replace('_modal', '');
             const data = await keyValueService.get('ticketDB', `Ticket_${interaction.channel.id}_${buttonCustomId}`);
             if (!data) return interaction.reply({ content: `Please Setup Again`, ephemeral: true });
-            
+
             const ticketReason = interaction.fields.getTextInputValue('ticket_reason');
             createTicketChannel(interaction, data, ticketReason);
         }
@@ -83,12 +83,44 @@ async function createTicketChannel(interaction, data, ticketReason = null) {
     await keyValueService.set('ticketDB', `TICKET-PANEL_${channel.id}`, { author: interaction.user.id, Support: data.Support });
     interaction.reply({ content: `${channel} has been created :white_check_mark:`, ephemeral: true });
 
+    const mentionLine = `**${interaction.user} | <@&${data.Support}>**`;
+    const welcomeMessage = data.Internal || '';
+
+    let embedTitle = null;
+    let embedDescription = '';
+    let embedColor = 'Random';
+    let embedImage = null;
+    let useThumbnail = false;
+
+    const templateMatch = welcomeMessage.match(/^\[template:(.+?)\]/);
+    if (templateMatch) {
+        const templateName = templateMatch[1].trim();
+        const welcomeTemplates = await keyValueService.get('welcomeTemplates', interaction.guild.id) || {};
+        const templateData = welcomeTemplates[templateName];
+
+        if (templateData) {
+            embedTitle = templateData.title || null;
+            embedDescription = templateData.description || '';
+            embedColor = templateData.color || 'Random';
+            embedImage = templateData.image || null;
+            useThumbnail = Boolean(templateData.thumbnail);
+        } else {
+            embedDescription = 'تعذر العثور على قالب الترحيب المحدد، تم استخدام الرسالة الافتراضية.';
+        }
+    } else {
+        embedDescription = welcomeMessage;
+    }
+
     const embed = new EmbedBuilder()
-        .setColor('Random')
-        .setDescription(`${data.Internal}`)
+        .setColor(embedColor)
+        .setDescription(`${mentionLine}\n\n${embedDescription}`)
         .setFooter({ text: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
         .setAuthor({ name: interaction.guild.name, iconURL: interaction.guild.iconURL() })
         .setTimestamp();
+
+    if (embedTitle) embed.setTitle(embedTitle);
+    if (embedImage) embed.setImage(embedImage);
+    if (useThumbnail) embed.setThumbnail(interaction.guild.iconURL());
 
     const select = new StringSelectMenuBuilder()
         .setCustomId('supportPanel')
@@ -115,29 +147,21 @@ async function createTicketChannel(interaction, data, ticketReason = null) {
     const row2 = new ActionRowBuilder().addComponents(select);
     const row = new ActionRowBuilder()
         .addComponents(
-            new ButtonBuilder().setCustomId('close').setLabel('Close').setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId('claim').setLabel('Claim').setStyle(ButtonStyle.Success)
+            new ButtonBuilder().setCustomId('close').setLabel('إغلاق').setEmoji('🔒').setStyle(ButtonStyle.Danger),
+            new ButtonBuilder().setCustomId('claim').setLabel('استلام').setEmoji('✅').setStyle(ButtonStyle.Success)
         );
 
-    if (data.Type === 'embed') {
-        await channel.send({ 
-            content: `${interaction.user},<@&${data.Support}>`, 
-            embeds: [embed], 
-            components: [row, row2] 
-        });
-    } else {
-        await channel.send({ 
-            content: `${interaction.user},<@&${data.Support}>\n${data.Internal}`, 
-            components: [row, row2] 
-        });
-    }
+    await channel.send({
+        embeds: [embed],
+        components: [row, row2]
+    });
 
     if (ticketReason) {
         const reasonEmbed = new EmbedBuilder()
             .setColor('Random')
             .setDescription(`**سبب فتح التكت : \`\`\` ${ticketReason} \`\`\`**`)
             .setTimestamp();
-        
+
         await channel.send({ embeds: [reasonEmbed] });
     }
 }
