@@ -83,7 +83,10 @@ for (let folder of readdirSync(folderPath).filter(
   for (let file of readdirSync(`${folderPath}/${folder}`).filter((f) =>
     f.endsWith(".js")
   )) {
-    let command = require(`${folderPath}/${folder}/${file}`);
+    const filePath = `${folderPath}/${folder}/${file}`;
+    // حذف الملف من ذاكرة التخزين المؤقت لضمان تحميل النسخة الأحدث
+    delete require.cache[require.resolve(filePath)];
+    let command = require(filePath);
     if (command) {
       CookiesSlashCommands.push(command.data.toJSON());
       client27.CookiesSlashCommands.set(command.data.name, command);
@@ -105,13 +108,17 @@ for (let foldeer of readdirSync(folderPath2).filter(
   for (let fiee of readdirSync(`${folderPath2}/${foldeer}`).filter((fi) =>
     fi.endsWith(".js")
   )) {
-    const commander = require(`${folderPath2}/${foldeer}/${fiee}`);
+    const filePath2 = `${folderPath2}/${foldeer}/${fiee}`;
+    delete require.cache[require.resolve(filePath2)];
+    const commander = require(filePath2);
   }
 }
 
 // Load event files from events folder
 for (let file of readdirSync("./events/").filter((f) => f.endsWith(".js"))) {
-  const event = require(`./events/${file}`);
+  const eventPath = `./events/${file}`;
+  delete require.cache[require.resolve(eventPath)];
+  const event = require(eventPath);
   if (event.once) {
     client27.once(event.name, (...args) => event.execute(...args));
   } else {
