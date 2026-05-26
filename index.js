@@ -127,13 +127,13 @@ for (let file of readdirSync("./events/").filter((f) => f.endsWith(".js"))) {
 }
 
 // ── Ready Event ──
-client27.once("ready", async () => {
+client27.once("clientReady", async () => {
   // Register slash commands
   try {
     
     const { REST } = require("@discordjs/rest");
     const { Routes } = require("discord-api-types/v10");
-    const rest = new REST({ version: "10" }).setToken(token);
+    const rest = new REST({ version: "10" }).setToken(client27.token);
     
     await rest.put(Routes.applicationCommands(client27.user.id), {
       body: CookiesSlashCommands,
