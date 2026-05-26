@@ -24,7 +24,12 @@ const { readdirSync } = require("fs");
   const { REST } = require('@discordjs/rest');
   const { Routes } = require('discord-api-types/v10');
 const { token, clientId,owner, prefix } = require('./config.js');
+const { connectDatabase } = require('./handlers/database');
   theowner = owner;
+
+connectDatabase().catch((err) => {
+  console.error('[MongoDB] Initial connection failed:', err.message);
+});
   const client27 = new Client({intents: 131071 , shards: "auto", partials: [Partials.Message, Partials.Channel, Partials.GuildMember,]});
   client27.commands = new Collection();
   require(`./handlers/events`)(client27);
