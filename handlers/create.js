@@ -113,7 +113,7 @@ async function createTicketChannel(interaction, data, ticketReason = null) {
 
     const embed = new EmbedBuilder()
         .setColor(embedColor)
-        .setDescription(`${mentionLine}\n\n${embedDescription}`)
+        .setDescription(embedDescription)
         .setFooter({ text: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
         .setAuthor({ name: interaction.guild.name, iconURL: interaction.guild.iconURL() })
         .setTimestamp();
@@ -152,6 +152,7 @@ async function createTicketChannel(interaction, data, ticketReason = null) {
         );
 
     await channel.send({
+        content: mentionLine,
         embeds: [embed],
         components: [row, row2]
     });
