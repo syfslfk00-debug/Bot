@@ -33,13 +33,11 @@ const ticketDB = new Database("/Json-db/Bots/ticketDB.json");
 
 const path = require("path");
 const { readdirSync } = require("fs");
-const { REST } = require("@discordjs/rest");
-const { Routes } = require("discord-api-types/v10");
 const { token, clientId, owner, prefix } = require("./config.js"); // ✅ استيراد أولاً
 const { connectDatabase } = require("./handlers/database");
 const theowner = owner;
 
-const rest = new REST({ version: "10" }).setToken(token); // ✅ الآن token معرف
+
 
 connectDatabase().catch((err) => {
   console.error("[MongoDB] Initial connection failed:", err.message);
@@ -126,6 +124,11 @@ for (let file of readdirSync("./events/").filter((f) => f.endsWith(".js"))) {
 client27.once("clientReady", async () => {
   // Register slash commands
   try {
+    
+    const { REST } = require("@discordjs/rest");
+    const { Routes } = require("discord-api-types/v10");
+    const rest = new REST({ version: "10" }).setToken(token);
+    
     await rest.put(Routes.applicationCommands(client27.user.id), {
       body: CookiesSlashCommands,
     });
