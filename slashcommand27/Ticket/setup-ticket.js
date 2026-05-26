@@ -491,9 +491,95 @@ module.exports = {
       Ask: settings.askReason,
     });
 
+    // ---- بداية الجزء المضاف (زر الحفظ والإنهاء) ----
+    const saveRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId("save_preset")
+        .setLabel("💾 حفظ الإعداد")
+        .setStyle(ButtonStyle.Success),
+      new ButtonBuilder()
+        .setCustomId("finish_setup")
+        .setLabel("❌ إنهاء")
+        .setStyle(ButtonStyle.Secondary)
+    );
+
     await interaction.editReply({
-      components: [],
-      embeds: [new EmbedBuilder().setColor("#00FF00").setDescription("✅ تم إنشاء نظام التذاكر بنجاح!")],
+      components: [saveRow],
+      embeds: [
+        new EmbedBuilder()
+          .setColor("#00FF00")
+          .setDescription("✅ تم إنشاء نظام التذاكر بنجاح! يمكنك حفظ هذا الإعداد لاستخدامه لاحقاً."),
+      ],
     });
+
+    try {
+      const saveFilter = (i) => i.user.id === interaction.user.id;
+      const saveInteraction = await interaction.channel.awaitMessageComponent({
+        filter: saveFilter,
+        time: 120_000,
+      });
+
+      if (saveInteraction.customId === "save_preset") {
+        // نافذة تسمية الإعداد
+        const nameModal = new ModalBuilder()
+          .setCustomId("modal_preset_name")
+          .setTitle("تسمية الإعداد المسبق");
+
+        const nameInput = new TextInputBuilder()
+          .setCustomId("preset_name")
+          .setLabel("أدخل اسماً مميزاً لهذا الإعداد")
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true)
+          .setMaxLength(100);
+
+        nameModal.addComponents(new ActionRowBuilder().addComponents(nameInput));
+        await saveInteraction.showModal(nameModal);
+
+        const modalSubmit = await saveInteraction.awaitModalSubmit({ time: 60_000 });
+        const presetName = modalSubmit.fields.getTextInputValue("preset_name").trim();
+
+        // استرجاع الإعدادات المسبقة الحالية من قاعدة البيانات
+        const presets = (await keyValueService.get("ticketPresets", interaction.guild.id)) || {};
+        presets[presetName] = {
+          title: settings.title,
+          description: settings.description,
+          color: settings.color,
+          buttonName: settings.buttonName,
+          buttonStyle: settings.buttonStyle,
+          buttonEmoji: settings.buttonEmoji,
+          supportRoleId: settings.supportRoleId,
+          categoryId: settings.categoryId,
+          thumbnail: settings.thumbnail,
+          embedImage: settings.embedImage,
+          welcomeMessage: settings.welcomeMessage,
+          welcomeType: settings.welcomeType,
+          askReason: settings.askReason,
+        };
+        await keyValueService.set("ticketPresets", interaction.guild.id, presets);
+
+        await modalSubmit.reply({
+          content: `✅ تم حفظ الإعداد المسبق باسم \`${presetName}\` بنجاح!`,
+          flags: MessageFlags.Ephemeral,
+        });
+        await interaction.editReply({
+          components: [],
+          embeds: [new EmbedBuilder().setColor("#00FF00").setDescription("✅ تم حفظ الإعداد.")],
+        });
+      } else {
+        // ضغط على "إنهاء"
+        await saveInteraction.deferUpdate();
+        await interaction.editReply({
+          components: [],
+          embeds: [new EmbedBuilder().setColor("#00FF00").setDescription("✅ تم إنهاء الإعداد.")],
+        });
+      }
+    } catch {
+      // إذا لم يستجب المستخدم خلال 120 ثانية، نغلق الأزرار
+      await interaction.editReply({
+        components: [],
+        embeds: [new EmbedBuilder().setColor("#00FF00").setDescription("✅ تم إنشاء نظام التذاكر.")],
+      });
+    }
+    // ---- نهاية الجزء المضاف ----
   },
 };
