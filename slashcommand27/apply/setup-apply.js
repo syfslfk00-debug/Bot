@@ -1,6 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder , PermissionsBitField, ActionRowBuilder,ButtonBuilder,MessageComponentCollector,ButtonStyle } = require("discord.js");
-const { Database } = require("st.db")
-const applyDB = new Database("/Json-db/Bots/applyDB.json")
+const keyValueService = require("../../services/keyValueService");
 
 module.exports ={
     adminsOnly:true,
@@ -34,7 +33,7 @@ module.exports ={
         let appliesroom = interaction.options.getChannel(`appliesroom`)
         let resultsroom = interaction.options.getChannel(`resultsroom`)
         let adminrole = interaction.options.getRole(`adminrole`)
-            await applyDB.set(`apply_settings_${interaction.guild.id}` , {
+            await keyValueService.set('applyDB', `apply_settings_${interaction.guild.id}` , {
                 applyroom:applyroom.id,
                 appliesroom:appliesroom.id,
                 resultsroom:resultsroom.id,

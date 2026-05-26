@@ -1,6 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require('discord.js');
-const { Database } = require('st.db');
-const db = new Database("/Json-db/Bots/ticketDB");
+const keyValueService = require("../../services/keyValueService");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -143,7 +142,7 @@ module.exports = {
             internalTicketCollector.on('collect', async internalTicket => {
                 const message = await interaction.channel.send({ embeds: [embed], components: [row] });
 
-                await db.set(`Ticket_${interaction.channel.id}_${randomId}`, {
+                await keyValueService.set('ticketDB', `Ticket_${interaction.channel.id}_${randomId}`, {
                     Support: supportRole.id,
                     Category: category.id,
                     Internal: internalTicket.content,

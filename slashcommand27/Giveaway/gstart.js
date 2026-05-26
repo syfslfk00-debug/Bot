@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder ,ButtonStyle, PermissionsBitField, ButtonBuilder, ActionRowBuilder } = require("discord.js");
-const { Database } = require("st.db")
-const giveawayDB = new Database("/Json-db/Bots/giveawayDB.json")
+const keyValueService = require("../../services/keyValueService");
+
 const moment = require('moment');
 const ms = require('ms')
 module.exports = {
@@ -43,14 +43,14 @@ const button = new ButtonBuilder()
 .setDisabled(false)
 const row = new ActionRowBuilder().addComponents(button)
 const send = await interaction.editReply({content:`**تم انشاء الجيف اواي بنجاح**` , ephemeral:true})
-let giveaways = giveawayDB.get(`giveaways_${interaction.guild.id}`)
+let giveaways = await keyValueService.get('giveawayDB', `giveaways_${interaction.guild.id}`)
 if(!giveaways) {
-    await giveawayDB.set(`giveaways_${interaction.guild.id}` , [])
+    await keyValueService.set('giveawayDB', `giveaways_${interaction.guild.id}` , [])
 } 
-giveaways = giveawayDB.get(`giveaways_${interaction.guild.id}`)
+giveaways = await keyValueService.get('giveawayDB', `giveaways_${interaction.guild.id}`)
 const theduration = ms(duration) / 1000
 const send2 = await interaction.channel.send({embeds:[embed] , components:[row]})
 giveaways.push({messageid:send2.id,channelid:interaction.channel.id,entries:[],winners:winners,prize:prize,duration:theduration , dir1:dir1,dir2:dir2,host:interaction.user.id,ended:false})
-await giveawayDB.set(`giveaways_${interaction.guild.id}` , giveaways)
+await keyValueService.set('giveawayDB', `giveaways_${interaction.guild.id}` , giveaways)
 }
 }

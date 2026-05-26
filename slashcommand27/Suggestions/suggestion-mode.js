@@ -1,6 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { Database } = require('st.db');
-const suggestionsDB = new Database("/Json-db/Bots/suggestionsDB.json");
+const keyValueService = require("../../services/keyValueService");
 
 module.exports = {
     adminsOnly: true,
@@ -27,10 +26,10 @@ module.exports = {
         const mode = interaction.options.getString('mode');
         const threadMode = interaction.options.getString('thread');
 
-        await suggestionsDB.set(`suggestion_mode_${interaction.guild.id}`, mode);
+        await keyValueService.set('suggestionsDB', `suggestion_mode_${interaction.guild.id}`, mode);
 
         if (threadMode) {
-            await suggestionsDB.set(`thread_mode_${interaction.guild.id}`, threadMode);
+            await keyValueService.set('suggestionsDB', `thread_mode_${interaction.guild.id}`, threadMode);
         }
 
         await interaction.reply({

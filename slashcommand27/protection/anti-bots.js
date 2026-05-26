@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder ,ButtonStyle, PermissionsBitField, ButtonBuilder, ActionRowBuilder } = require("discord.js");
-const { Database } = require("st.db")
-const db = new Database("/Json-db/Bots/protectDB.json")
+const keyValueService = require("../../services/keyValueService");
+
 module.exports = {
     ownersOnly:true,
     data: new SlashCommandBuilder()
@@ -23,7 +23,7 @@ async execute(interaction) {
     await interaction.deferReply({ephemeral:false})
     try {
       const status = interaction.options.getString(`status`)
-      await db.set(`antibots_status_${interaction.guild.id}` , status)
+      await keyValueService.set('protectDB', `antibots_status_${interaction.guild.id}` , status)
      return interaction.editReply({content:`**تم بنجاح تعيين الحالة \n - تاكد من رفع رتبتي لاعلى رتبة في السيرفر**`})
     } catch {
     }

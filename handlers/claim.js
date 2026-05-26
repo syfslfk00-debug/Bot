@@ -1,6 +1,5 @@
 const { StringSelectMenuOptionBuilder, StringSelectMenuBuilder, SlashCommandBuilder, Events, ActivityType, ModalBuilder, TextInputStyle, EmbedBuilder, PermissionsBitField, ButtonStyle, TextInputBuilder, ActionRowBuilder, ButtonBuilder, MessageComponentCollector, Embed } = require("discord.js")
-const { Database } = require('st.db')
-const dd = new Database('/Json-db/Bots/ticketDB')
+const keyValueService = require("../services/keyValueService");
 
 const select = new StringSelectMenuBuilder()
     .setCustomId('supportPanel')
@@ -20,12 +19,12 @@ module.exports = (client7) => {
             const [action] = interaction.customId.split('_')
 
             if (action === 'claim') {
-                const Support = dd.get(`TICKET-PANEL_${interaction.channel.id}`).Support
+                const Support = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`).Support
                 if (!interaction.member.roles.cache.has(Support)) {
                     return interaction.reply({ content: `:x: Only Support`, ephemeral: true })
                 }
 
-                dd.set(`Claimed_${interaction.channel.id}`, interaction.user.id)
+                await keyValueService.set('ticketDB', `Claimed_${interaction.channel.id}`, interaction.user.id)
 
                 const Row = new ActionRowBuilder()
                     .addComponents(
@@ -43,8 +42,8 @@ module.exports = (client7) => {
                 await interaction.editReply({ components: [Row, Row2] })
                 await interaction.channel.send({ embeds: [claimembed] })
             } else if (action === 'unclaim') {
-                if (dd.get(`Claimed_${interaction.channel.id}`) == interaction.user.id) {
-                    const Support = dd.get(`TICKET-PANEL_${interaction.channel.id}`)?.Support
+                if (await keyValueService.get('ticketDB', `Claimed_${interaction.channel.id}`) == interaction.user.id) {
+                    const Support = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`)?.Support
 
                     if (!interaction.member.roles.cache.has(Support)) {
                         return interaction.reply({ content: `:x: Only Support`, ephemeral: true })

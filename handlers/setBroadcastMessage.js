@@ -1,6 +1,6 @@
 const { SlashCommandBuilder,Events ,Client, ActivityType,ModalBuilder,TextInputStyle, EmbedBuilder , PermissionsBitField,ButtonStyle, TextInputBuilder, ActionRowBuilder,ButtonBuilder,MessageComponentCollector } = require("discord.js");
-const { Database } = require("st.db")
-const db = new Database("/Json-db/Bots/BroadcastDB")
+const keyValueService = require("../services/keyValueService");
+
 module.exports = (client2) => {
     client2.on(Events.InteractionCreate , async(interaction) =>{
    if(interaction.isButton()) {
@@ -27,14 +27,14 @@ if(interaction.isModalSubmit()) {
     if(interaction.customId == "broadcast_message_modal") {
         await interaction.deferReply({ephemeral:false})
         const themessage = interaction.fields.getTextInputValue(`the_message`)
-        await db.set(`broadcast_msg_${interaction.guild.id}` , themessage);
-        const broadcast_msg = db.get(`broadcast_msg_${interaction.guild.id}`) ?? themessage;
-        const msgid = db.get(`msgid_${interaction.guild.id}`)
-        tokens = db.get(`tokens_${interaction.guild.id}`)
+        await keyValueService.set('BroadcastDB', `broadcast_msg_${interaction.guild.id}` , themessage);
+        const broadcast_msg = await keyValueService.get('BroadcastDB', `broadcast_msg_${interaction.guild.id}`) ?? themessage;
+        const msgid = await keyValueService.get('BroadcastDB', `msgid_${interaction.guild.id}`)
+        tokens = await keyValueService.get('BroadcastDB', `tokens_${interaction.guild.id}`)
 		if(!tokens) {
-		await db.set(`tokens_${interaction.guild.id}` , [])
+		await keyValueService.set('BroadcastDB', `tokens_${interaction.guild.id}` , [])
 		}
-		tokens = db.get(`tokens_${interaction.guild.id}`)
+		tokens = await keyValueService.get('BroadcastDB', `tokens_${interaction.guild.id}`)
         if(msgid) {
             const msg = interaction.channel.messages.fetch(msgid).then(async(msgg) => {
                 const embed2 = new EmbedBuilder()

@@ -1,6 +1,5 @@
 const { SlashCommandBuilder } = require("discord.js");
-const { Database } = require("st.db");
-const shortcutDB = new Database("/Json-db/Others/shortcutDB.json");
+const keyValueService = require("../../services/keyValueService");
 
 module.exports = {
     adminsOnly: true,
@@ -36,7 +35,7 @@ module.exports = {
             const command = interaction.options.getString('command');
             const shortcut = interaction.options.getString('shortcut');
 
-            await shortcutDB.set(`${command}_cmd_${interaction.guild.id}`, shortcut);
+            await keyValueService.set('shortcutDB', `${command}_cmd_${interaction.guild.id}`, shortcut);
 
             return interaction.reply({ content: `**تم تحديد اختصار للأمر \`${command}\` بنجاح: \`${shortcut}\`**` });
         } catch (error) {

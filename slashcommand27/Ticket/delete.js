@@ -1,6 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
-const { Database } = require("st.db");
-const db = new Database('/Json-db/Bots/ticketDB');
+const keyValueService = require("../../services/keyValueService");
 
 module.exports = {
     adminsOnly: false,
@@ -9,12 +8,12 @@ module.exports = {
         .setDescription('Delete the current ticket channel'),
         
     async execute(interaction) {
-        const Support = db.get(`TICKET-PANEL_${interaction.channel.id}`)?.Support;
+        const Support = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`)?.Support;
         if (!interaction.member.roles.cache.has(Support)) {
             return interaction.reply({ content: ':x: Only Support', ephemeral: true });
         } 
 
-        if (!db.has(`TICKET-PANEL_${interaction.channel.id}`)) {
+        if (!await keyValueService.has('ticketDB', `TICKET-PANEL_${interaction.channel.id}`)) {
             return interaction.reply({ content: 'This channel isn\'t a ticket', ephemeral: true });
         }
 
@@ -28,9 +27,9 @@ module.exports = {
             interaction.channel.delete();
         }, 4500);
 
-        const Logs = db.get(`LogsRoom_${interaction.guild.id}`);
+        const Logs = await keyValueService.get('ticketDB', `LogsRoom_${interaction.guild.id}`);
         const Log = interaction.guild.channels.cache.get(Logs);
-        const Ticket = db.get(`TICKET-PANEL_${interaction.channel.id}`);
+        const Ticket = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`);
         const logEmbed = new EmbedBuilder()
             .setAuthor({ name: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
             .setTitle('Delete Ticket')
@@ -42,6 +41,6 @@ module.exports = {
             .setFooter({ text: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() });
 
         Log?.send({ embeds: [logEmbed] });
-        db.delete(`TICKET-PANEL_${interaction.channel.id}`);
+        await keyValueService.delete('ticketDB', `TICKET-PANEL_${interaction.channel.id}`);
     }
 }

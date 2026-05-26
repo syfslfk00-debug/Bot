@@ -1,6 +1,5 @@
 const {ChatInputCommandInteraction , Client , SlashCommandBuilder, EmbedBuilder , PermissionsBitField, ActionRowBuilder,ButtonBuilder,MessageComponentCollector,ButtonStyle } = require("discord.js");
-const { Database } = require("st.db")
-const CookiesDB = new Database("/Json-db/Bots/CookiesDB.json")
+const keyValueService = require("../../services/keyValueService");
 
 module.exports ={
     adminsOnly:true,
@@ -21,7 +20,7 @@ module.exports ={
             const word = interaction.options.getString(`word`)
 
             // البحث عن الردود التلقائية في السيرفر
-            const replysCheck = await CookiesDB.get(`replys_${interaction.guild.id}`);
+            const replysCheck = await keyValueService.get('CookiesDB', `replys_${interaction.guild.id}`);
 
             // اذا وجدت الردود التلقائية في السيرفر
             if(replysCheck){
@@ -31,7 +30,7 @@ module.exports ={
                     if(data){
                         // حذف الرد من الردود التلقائية
                         const replysFiltered = replysCheck.filter(r => r.word !== word)
-                        await CookiesDB.set(`replys_${interaction.guild.id}` , replysFiltered)
+                        await keyValueService.set('CookiesDB', `replys_${interaction.guild.id}` , replysFiltered)
                         return interaction.editReply({content : `**تم حذف الرد التلقائي \`${word}\`**`});
                     }else{
                         // اذا لم يوجد رد بهذه الكلمة

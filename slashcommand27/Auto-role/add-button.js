@@ -1,5 +1,4 @@
 const { SlashCommandBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
-const { Database } = require('st.db');
 
 module.exports = {
     adminsOnly: true,

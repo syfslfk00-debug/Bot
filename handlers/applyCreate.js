@@ -1,3 +1,4 @@
+const keyValueService = require("../services/keyValueService");
 const {
   SlashCommandBuilder,
   Events,
@@ -13,21 +14,19 @@ const {
   MessageComponentCollector,
   Embed,
 } = require("discord.js");
-const { Database } = require("st.db");
 
-const applyDB = new Database("/Json-db/Bots/applyDB.json");
 module.exports = (client27) => {
   client27.on(Events.InteractionCreate, async (interaction) => {
     if (interaction.isButton()) {
       if (interaction.customId == "apply_button") {
-        const settings = applyDB.get(`apply_settings_${interaction.guild.id}`);
+        const settings = await keyValueService.get('applyDB', `apply_settings_${interaction.guild.id}`);
         if (!settings)
           return interaction.reply({
             content: `**لم يتم تحديد الاعدادات**`,
             ephemeral: true,
           });
 
-        const findApply = await applyDB.get(`apply_${interaction.guild.id}`);
+        const findApply = await keyValueService.get('applyDB', `apply_${interaction.guild.id}`);
         if (!findApply)
           return interaction.reply({
             content: `**لا يوجد تقديم مفتوح في الوقت الحالي**`,
@@ -96,7 +95,7 @@ module.exports = (client27) => {
         await interaction.showModal(modal);
       }
       if (interaction.customId == "apply_reject_with_reason") {
-        const settings = applyDB.get(`apply_settings_${interaction.guild.id}`);
+        const settings = await keyValueService.get('applyDB', `apply_settings_${interaction.guild.id}`);
         let adminrole = settings.adminrole;
         if (!interaction.member.roles.cache.has(`${adminrole}`))
           return interaction.reply({

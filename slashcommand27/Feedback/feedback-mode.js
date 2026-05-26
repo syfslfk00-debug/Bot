@@ -1,6 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { Database } = require('st.db');
-const feedbackDB = new Database("/Json-db/Bots/feedbackDB.json");
+const keyValueService = require("../../services/keyValueService");
 
 module.exports = {
     adminsOnly: true,
@@ -23,8 +22,8 @@ module.exports = {
         const mode = interaction.options.getString('mode');
         const emoji = interaction.options.getString('emoji') || '❤'; 
 
-        await feedbackDB.set(`feedback_mode_${interaction.guild.id}`, mode);
-        await feedbackDB.set(`feedback_emoji_${interaction.guild.id}`, emoji);
+        await keyValueService.set('feedbackDB', `feedback_mode_${interaction.guild.id}`, mode);
+        await keyValueService.set('feedbackDB', `feedback_emoji_${interaction.guild.id}`, emoji);
 
         await interaction.reply({ content: `تم ظبط وضع الأراء على ${mode}`, ephemeral: true });
     },

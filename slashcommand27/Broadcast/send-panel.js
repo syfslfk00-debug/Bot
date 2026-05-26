@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder ,ButtonStyle, PermissionsBitField, ButtonBuilder, ActionRowBuilder } = require("discord.js");
-const { Database } = require("st.db")
-const db = new Database("/Json-db/Bots/BroadcastDB")
+const keyValueService = require("../../services/keyValueService");
+
 module.exports = {
     adminsOnly:true,
     data: new SlashCommandBuilder()
@@ -9,8 +9,8 @@ module.exports = {
 async execute(interaction) {
     await interaction.deferReply({ephemeral:false})
     try {
-        const broadcast_msg = db.get(`broadcast_msg_${interaction.guild.id}`) ?? "لم يتم تحديد رسالة"
-        const msgid = db.get(`msgid_${interaction.guild.id}`)
+        const broadcast_msg = await keyValueService.get('BroadcastDB', `broadcast_msg_${interaction.guild.id}`) ?? "لم يتم تحديد رسالة"
+        const msgid = await keyValueService.get('BroadcastDB', `msgid_${interaction.guild.id}`)
         if(msgid) {
             let chan = interaction.guild.channels.cache.forEach(async(channel) => {
                 try {
@@ -22,7 +22,7 @@ async execute(interaction) {
                 }
             })
         }
-        const tokens = db.get(`tokens_${interaction.guild.id}`) ?? 0;
+        const tokens = await keyValueService.get('BroadcastDB', `tokens_${interaction.guild.id}`) ?? 0;
         const embed = new EmbedBuilder()
         .setTitle(`**التحكم في البرودكاست**`)
         .addFields(
@@ -59,7 +59,7 @@ async execute(interaction) {
         const row = new ActionRowBuilder()
         .addComponents(add_token,broadcast_message,start_broadcast)
         let newmsg = await interaction.editReply({embeds:[embed] , components:[row]})
-        await db.set(`msgid_${interaction.guild.id}` , newmsg.id)
+        await keyValueService.set('BroadcastDB', `msgid_${interaction.guild.id}` , newmsg.id)
         return;
     } catch {
     }

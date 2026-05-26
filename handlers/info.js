@@ -1,6 +1,5 @@
 const { Events } = require("discord.js");
-const { Database } = require('st.db');
-const buttonsDB = new Database("/Json-db/Bots/systemDB.json");
+const keyValueService = require("../services/keyValueService");
 
 module.exports = (client27) => {
   client27.on(Events.InteractionCreate, async (interaction) => {
@@ -11,7 +10,7 @@ module.exports = (client27) => {
 
       try {
         const guildId = interaction.guild.id;
-        const savedMessage = await buttonsDB.get(`${guildId}_${buttonId}`);
+        const savedMessage = await keyValueService.get('systemDB', `${guildId}_${buttonId}`);
 
         if (savedMessage) {
           await interaction.reply({ content: savedMessage, ephemeral: true });

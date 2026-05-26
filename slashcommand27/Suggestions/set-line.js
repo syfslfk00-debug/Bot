@@ -1,6 +1,6 @@
 const { ChatInputCommandInteraction, Client, SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require("discord.js");
-const { Database } = require("st.db");
-const suggestionsDB = new Database("/Json-db/Bots/suggestionsDB.json");
+const keyValueService = require("../../services/keyValueService");
+
 const isImage = require('is-image-header');
 
 module.exports = {
@@ -20,7 +20,7 @@ module.exports = {
         try {
             await interaction.deferReply();
             const line = interaction.options.getString('line');
-            await suggestionsDB.set(`line_${interaction.guild.id}`, line);
+            await keyValueService.set('suggestionsDB', `line_${interaction.guild.id}`, line);
             let embed = new EmbedBuilder()
                 .setDescription('**تم تحديد الخط**')
                 .setColor('Green')

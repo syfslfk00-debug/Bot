@@ -1,6 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { Database } = require('st.db');
-const taxDB = new Database("/Json-db/Bots/taxDB.json");
+const keyValueService = require("../../services/keyValueService");
 
 module.exports = {
     adminsOnly: true,
@@ -23,8 +22,8 @@ module.exports = {
         const mode = interaction.options.getString('mode');
         const color = interaction.options.getString('color') || '#0099FF'; 
 
-        await taxDB.set(`tax_mode_${interaction.guild.id}`, mode);
-        await taxDB.set(`tax_color_${interaction.guild.id}`, color);
+        await keyValueService.set('taxDB', `tax_mode_${interaction.guild.id}`, mode);
+        await keyValueService.set('taxDB', `tax_color_${interaction.guild.id}`, color);
 
         await interaction.reply({ content: `تم ضبط وضع الضريبة على ${mode}`, ephemeral: true });
     },

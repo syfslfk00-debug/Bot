@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder ,ButtonStyle, PermissionsBitField, ButtonBuilder, ActionRowBuilder } = require("discord.js");
-const { Database } = require("st.db")
-const giveawayDB = new Database("/Json-db/Bots/giveawayDB.json")
+const keyValueService = require("../../services/keyValueService");
+
 const moment = require('moment');
 const ms = require('ms')
 module.exports = {
@@ -19,11 +19,11 @@ async execute(interaction) {
 const giveawayid = interaction.options.getString(`giveawayid`)
 let theguild = interaction.guild;
 
-let giveaways = giveawayDB.get(`giveaways_${interaction.guild.id}`)
+let giveaways = await keyValueService.get('giveawayDB', `giveaways_${interaction.guild.id}`)
 if(!giveaways) {
-    await giveawayDB.set(`giveaways_${interaction.guild.id}` , [])
+    await keyValueService.set('giveawayDB', `giveaways_${interaction.guild.id}` , [])
 } 
-giveaways = giveawayDB.get(`giveaways_${interaction.guild.id}`)
+giveaways = await keyValueService.get('giveawayDB', `giveaways_${interaction.guild.id}`)
 const giveawayFind = giveaways.find(gu => gu.messageid == giveawayid)
 if(!giveawayFind) return interaction.editReply({content:`**لم يتم العثور على جيف اواي بهذا الايدي**`, ephemeral:true})
 let {messageid , channelid , entries , winners , prize , duration,dir1,dir2,host,ended} = giveawayFind;

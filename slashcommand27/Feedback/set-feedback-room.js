@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder , PermissionsBitField } = require("discord.js");
-const { Database } = require("st.db")
-const feedbackDB = new Database("/Json-db/Bots/feedbackDB.json")
+const keyValueService = require("../../services/keyValueService");
+
 module.exports = {
     adminsOnly:true,
     data: new SlashCommandBuilder()
@@ -14,7 +14,7 @@ module.exports = {
 async execute(interaction) {
     try{
     const room = interaction.options.getChannel(`room`)
-    await feedbackDB.set(`feedback_room_${interaction.guild.id}` , room.id)
+    await keyValueService.set('feedbackDB', `feedback_room_${interaction.guild.id}` , room.id)
     return interaction.reply({content:`**تم تحديد الروم بنجاح**`})
 } catch  {
     return;

@@ -1,6 +1,6 @@
 const { ChatInputCommandInteraction , Client , SlashCommandBuilder, EmbedBuilder ,ButtonStyle, PermissionsBitField, ButtonBuilder, ActionRowBuilder } = require("discord.js");
-const { Database } = require("st.db")
-const db = new Database("/Json-db/Bots/protectDB.json")
+const keyValueService = require("../../services/keyValueService");
+
 module.exports = {
     ownersOnly:true,
     data: new SlashCommandBuilder()
@@ -13,17 +13,17 @@ module.exports = {
 async execute(interaction , client) {
     await interaction.deferReply({ephemeral:false})
     try {
-        const banStatus = db.get(`ban_status_${interaction.guild.id}`) || null;
-        const banLimit = db.get(`ban_limit_${interaction.guild.id}`);
+        const banStatus = await keyValueService.get('protectDB', `ban_status_${interaction.guild.id}`) || null;
+        const banLimit = await keyValueService.get('protectDB', `ban_limit_${interaction.guild.id}`);
 
-        const botsStatus = db.get(`antibots_status_${interaction.guild.id}`) || null;
+        const botsStatus = await keyValueService.get('protectDB', `antibots_status_${interaction.guild.id}`) || null;
         const botsLimit = "غير محدد"
 
-        const delteRolesStatus = db.get(`antideleteroles_status_${interaction.guild.id}`) || null;
-        const delteRolesLimit = db.get(`antideleteroles_limit_${interaction.guild.id}`) || "غير محدد"
+        const delteRolesStatus = await keyValueService.get('protectDB', `antideleteroles_status_${interaction.guild.id}`) || null;
+        const delteRolesLimit = await keyValueService.get('protectDB', `antideleteroles_limit_${interaction.guild.id}`) || "غير محدد"
 
-        const deleteRoomsStatus = db.get(`antideleterooms_status_${interaction.guild.id}`) || null;
-        const deleteRoomsLimit = db.get(`antideleterooms_limit_${interaction.guild.id}`) || "غير محدد"
+        const deleteRoomsStatus = await keyValueService.get('protectDB', `antideleterooms_status_${interaction.guild.id}`) || null;
+        const deleteRoomsLimit = await keyValueService.get('protectDB', `antideleterooms_limit_${interaction.guild.id}`) || "غير محدد"
 
         const embed = new EmbedBuilder()
                             .setTitle('حالة نظام الحماية')

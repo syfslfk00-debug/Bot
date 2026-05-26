@@ -1,7 +1,7 @@
 
 const { ChatInputCommandInteraction , Client , SlashCommandBuilder,Events , ActivityType,ModalBuilder,TextInputStyle, EmbedBuilder , PermissionsBitField,ButtonStyle, TextInputBuilder, ActionRowBuilder,ButtonBuilder,MessageComponentCollector, Embed } = require("discord.js");
-const { Database } = require("st.db")
-const dd = new Database("/Json-db/Bots/ticketDB.json")
+const keyValueService = require("../services/keyValueService");
+
 const discordTranscripts = require('discord-html-transcripts');
     /**
      * @param {ChatInputCommandInteraction} interaction
@@ -13,9 +13,9 @@ module.exports = (client27 , interaction) => {
 
 
       if(interaction.customId === "supportPanel"){
-          let selected = await dd.get(`${interaction.channel.id}`)
+          let selected = await keyValueService.get('ticketDB', `${interaction.channel.id}`)
       //    let panelFind = await panels.findOne({guildid:interaction.guild.id , panelId:selected.panelId})
-         const Support = dd.get(`TICKET-PANEL_${interaction.channel.id}`).Support;
+         const Support = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`).Support;
 
           if (!interaction.member.roles.cache.has(Support)) return interaction.reply({content:`**لا تمتلك الصلاحية لفعل هذا**` , ephemeral:true})
           

@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder , PermissionsBitField } = require("discord.js");
-const { Database } = require("st.db")
-const autolineDB = new Database("/Json-db/Bots/autolineDB.json")
+const keyValueService = require("../../services/keyValueService");
+
 module.exports = {
     adminsOnly:true,
     data: new SlashCommandBuilder()
@@ -14,14 +14,14 @@ module.exports = {
 async execute(interaction) {
     const room = interaction.options.getChannel(`room`)
     
-    let db = autolineDB.get(`line_channels_${interaction.guild.id}`)
-    if(!autolineDB.has(`line_channels_${interaction.guild.id}`)) {
-        await autolineDB.set(`line_channels_${interaction.guild.id}` , [])
+    let db = await keyValueService.get('autolineDB', `line_channels_${interaction.guild.id}`)
+    if(!await keyValueService.has('autolineDB', `line_channels_${interaction.guild.id}`)) {
+        await keyValueService.set('autolineDB', `line_channels_${interaction.guild.id}` , [])
     }
-    db = autolineDB.get(`line_channels_${interaction.guild.id}`)
+    db = await keyValueService.get('autolineDB', `line_channels_${interaction.guild.id}`)
     const filtered = db.filter(ch => ch != room.id)
     
-    await autolineDB.set(`line_channels_${interaction.guild.id}` , filtered)
+    await keyValueService.set('autolineDB', `line_channels_${interaction.guild.id}` , filtered)
     return interaction.reply({content:`**تم ازالة الروم بنجاح**`})
 }
 }

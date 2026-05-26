@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder , PermissionsBitField } = require("discord.js");
-const { Database } = require("st.db")
-const autolineDB = new Database("/Json-db/Bots/autolineDB.json")
+const keyValueService = require("../../services/keyValueService");
+
 module.exports = {
     adminsOnly:true,
     data: new SlashCommandBuilder()
@@ -13,10 +13,10 @@ module.exports = {
         .setRequired(true)), // or false
 async execute(interaction) {
     const room = interaction.options.getChannel(`room`)
-    if(!autolineDB.has(`line_channels_${interaction.guild.id}`)) {
-        await autolineDB.set(`line_channels_${interaction.guild.id}` , [])
+    if(!await keyValueService.has('autolineDB', `line_channels_${interaction.guild.id}`)) {
+        await keyValueService.set('autolineDB', `line_channels_${interaction.guild.id}` , [])
     }
-    await autolineDB.push(`line_channels_${interaction.guild.id}` , room.id)
+    await keyValueService.push('autolineDB', `line_channels_${interaction.guild.id}` , room.id)
     return interaction.reply({content:`**تم اضافة الروم بنجاح**`})
 }
 }

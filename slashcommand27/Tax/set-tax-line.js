@@ -1,6 +1,5 @@
 const { ChatInputCommandInteraction, Client, SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require("discord.js");
-const { Database } = require("st.db");
-const db = new Database("/Json-db/Bots/taxDB");
+const keyValueService = require("../../services/keyValueService");
 
 module.exports = {
     adminsOnly: true,
@@ -20,7 +19,7 @@ module.exports = {
         try {
             await interaction.deferReply();
             const line = interaction.options.getString('line');
-            await db.set(`tax_line_${interaction.guild.id}`, line);
+            await keyValueService.set('taxDB', `tax_line_${interaction.guild.id}`, line);
             let embed = new EmbedBuilder()
                 .setDescription(`**تم تحديد الخط**`)
                 .setColor('Green')

@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder , PermissionsBitField } = require("discord.js");
-const { Database } = require("st.db")
-const db = new Database("/Json-db/Bots/nadekoDB.json")
+const keyValueService = require("../../services/keyValueService");
+
 module.exports = {
     adminsOnly:true,
     data: new SlashCommandBuilder()
@@ -13,7 +13,7 @@ module.exports = {
 async execute(interaction) {
     await interaction.deferReply({ephemeral:false})
 const message = interaction.options.getString(`message`)
-await db.set(`message_${interaction.guild.id}` , message)
+await keyValueService.set('nadekoDB', `message_${interaction.guild.id}` , message)
 return interaction.editReply({content:`**تم تحديد الرسالة بنجاح**`})
 
 }

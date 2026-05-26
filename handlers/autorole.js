@@ -1,9 +1,7 @@
+const keyValueService = require("../services/keyValueService");
 const { 
   Events, ButtonBuilder, ActionRowBuilder, ButtonStyle 
 } = require("discord.js");
-const { Database } = require("st.db");
-
-const rolesDB = new Database("/Json-db/Bots/systemDB.json");
 
 module.exports = (client27) => {
   client27.on(Events.InteractionCreate, async (interaction) => {

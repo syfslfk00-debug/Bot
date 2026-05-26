@@ -1,14 +1,11 @@
 const { SlashCommandBuilder,Events , ActivityType,ModalBuilder,TextInputStyle, EmbedBuilder , PermissionsBitField,ButtonStyle, TextInputBuilder, ActionRowBuilder,ButtonBuilder,MessageComponentCollector, Embed } = require("discord.js");
-const { Database } = require("st.db")
-
-const applyDB = new Database("/Json-db/Bots/applyDB.json")
-
+const keyValueService = require("../services/keyValueService");
 
 module.exports = (client27) => {
   client27.on(Events.InteractionCreate , async(interaction) =>{
     //if(interaction.isButton()) {
       if(interaction.isButton() && interaction.customId == "apply_accept") {
-          const settings =  applyDB.get(`apply_settings_${interaction.guild.id}`)
+          const settings =  await keyValueService.get('applyDB', `apply_settings_${interaction.guild.id}`)
           let applyroom = settings.applyroom;
         let appliesroom = settings.appliesroom;
         let resultsroom = settings.resultsroom;
@@ -18,11 +15,11 @@ module.exports = (client27) => {
             const exampleEmbed = EmbedBuilder.from(receivedEmbed)
             const user = exampleEmbed.data.title
             let user2 = interaction.guild.members.cache.find(us => us.id == user)
-            const findApply = await applyDB.get(`apply_${interaction.guild.id}`)
+            const findApply = await keyValueService.get('applyDB', `apply_${interaction.guild.id}`)
             let roleid = parseInt(findApply.roleid);
             let therole = await interaction.guild.roles.cache.find(ro => ro.id == roleid);
             await user2.roles.add(therole).then(async() => {
-              if(applyDB.get(`dm_${interaction.guild.id}`) === true){
+              if(await keyValueService.get('applyDB', `dm_${interaction.guild.id}`) === true){
                 const dm_embed = new EmbedBuilder()
                                       .setAuthor({name:interaction.guild.name , iconURL:interaction.guild.iconURL({dynamic:true})})
                                       .setThumbnail(interaction.guild.iconURL({dynamic : true}))
@@ -67,7 +64,7 @@ module.exports = (client27) => {
             .catch(err => {return interaction.reply({content : `عذرا يرجى رفع رتبة البوت` , ephemeral : true})})
         }
         if(interaction.customId == "modal_reject_with_reason") {
-          const settings =  applyDB.get(`apply_settings_${interaction.guild.id}`)
+          const settings =  await keyValueService.get('applyDB', `apply_settings_${interaction.guild.id}`)
           let applyroom = settings.applyroom;
         let appliesroom = settings.appliesroom;
         let resultsroom = settings.resultsroom;
@@ -87,7 +84,7 @@ module.exports = (client27) => {
             .setAuthor({name:interaction.guild.name , iconURL:interaction.guild.iconURL({dynamic:true})})
             .setThumbnail(interaction.user.avatarURL({ dynamic: true }))
             await theresultsroom.send({embeds:[embed]})
-            if(applyDB.get(`dm_${interaction.guild.id}`) === true){
+            if(await keyValueService.get('applyDB', `dm_${interaction.guild.id}`) === true){
               const dm_embed = new EmbedBuilder()
                                     .setAuthor({name:interaction.guild.name , iconURL:interaction.guild.iconURL({dynamic:true})})
                                     .setThumbnail(interaction.guild.iconURL({dynamic : true}))
@@ -122,7 +119,7 @@ module.exports = (client27) => {
         }
 
         if(interaction.isButton() && interaction.customId == "apply_reject") {
-          const settings =  applyDB.get(`apply_settings_${interaction.guild.id}`)
+          const settings =  await keyValueService.get('applyDB', `apply_settings_${interaction.guild.id}`)
           let applyroom = settings.applyroom;
         let appliesroom = settings.appliesroom;
         let resultsroom = settings.resultsroom;
@@ -141,7 +138,7 @@ module.exports = (client27) => {
             .setAuthor({name:interaction.guild.name , iconURL:interaction.guild.iconURL({dynamic:true})})
             .setThumbnail(interaction.user.avatarURL({ dynamic: true }))
             await theresultsroom.send({embeds:[embed]})
-            if(applyDB.get(`dm_${interaction.guild.id}`) === true){
+            if(await keyValueService.get('applyDB', `dm_${interaction.guild.id}`) === true){
               const dm_embed = new EmbedBuilder()
                                     .setAuthor({name:interaction.guild.name , iconURL:interaction.guild.iconURL({dynamic:true})})
                                     .setThumbnail(interaction.guild.iconURL({dynamic : true}))

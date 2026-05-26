@@ -1,6 +1,6 @@
 const { SlashCommandBuilder,Events ,Client, ActivityType,ModalBuilder,TextInputStyle, EmbedBuilder , PermissionsBitField,ButtonStyle, TextInputBuilder, ActionRowBuilder,ButtonBuilder,MessageComponentCollector } = require("discord.js");
-const { Database } = require("st.db")
-const db = new Database("/Json-db/Bots/BroadcastDB")
+const keyValueService = require("../services/keyValueService");
+
 module.exports = (client2) => {
     client2.on(Events.InteractionCreate , async(interaction) =>{
     if(interaction.isButton()) {
@@ -28,7 +28,7 @@ module.exports = (client2) => {
         try {
             await interaction.deferReply({ephemeral:false});
             const thetoken = interaction.fields.getTextInputValue(`the_token`)
-            const thetokens = db.get(`tokens_${interaction.guild.id}`)
+            const thetokens = await keyValueService.get('BroadcastDB', `tokens_${interaction.guild.id}`)
             if(thetokens) {
                 if(thetokens.includes(thetoken)) {
                     return interaction.editReply({content:`**هذا التوكن موجود باللفعل**`})
@@ -55,15 +55,15 @@ module.exports = (client2) => {
 	.setStyle(ButtonStyle.Link);
     const row = new ActionRowBuilder().addComponents(invitebot);
             await interaction.editReply({embeds:[embed1],components:[row]})
-            let tokens = db.get(`tokens_${interaction.guild.id}`)
+            let tokens = await keyValueService.get('BroadcastDB', `tokens_${interaction.guild.id}`)
             if(!tokens) {
-                await db.set(`tokens_${interaction.guild.id}` , [thetoken])
+                await keyValueService.set('BroadcastDB', `tokens_${interaction.guild.id}` , [thetoken])
             } else {
-                await db.push(`tokens_${interaction.guild.id}` , thetoken)
+                await keyValueService.push('BroadcastDB', `tokens_${interaction.guild.id}` , thetoken)
             }
-            tokens = db.get(`tokens_${interaction.guild.id}`)
-            const broadcast_msg = db.get(`broadcast_msg_${interaction.guild.id}`) ?? "لم يتم تحديد رسالة"
-        const msgid = db.get(`msgid_${interaction.guild.id}`)
+            tokens = await keyValueService.get('BroadcastDB', `tokens_${interaction.guild.id}`)
+            const broadcast_msg = await keyValueService.get('BroadcastDB', `broadcast_msg_${interaction.guild.id}`) ?? "لم يتم تحديد رسالة"
+        const msgid = await keyValueService.get('BroadcastDB', `msgid_${interaction.guild.id}`)
         if(msgid) {
             const msg = interaction.channel.messages.fetch(msgid).then(async(msgg) => {
                 const embed2 = new EmbedBuilder()

@@ -1,6 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require('discord.js');
-const { Database } = require('st.db');
-const db = new Database('/Json-db/Bots/ticketDB');
+const keyValueService = require("../../services/keyValueService");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -124,7 +123,7 @@ module.exports = {
                 Ask: askOption // إضافة قيمة ask إلى بيانات التذكرة
             };
 
-            await db.set(`Ticket_${interaction.channel.id}_${randomId}`, ticketData);
+            await keyValueService.set('ticketDB', `Ticket_${interaction.channel.id}_${randomId}`, ticketData);
 
             await interaction.reply({ content: 'من فضلك قم بإرسال رسالة الترحيب داخل التذكرة :', ephemeral: true });
             const internalTicketCollector = interaction.channel.createMessageCollector({
@@ -135,7 +134,7 @@ module.exports = {
 
             internalTicketCollector.on('collect', async internalTicket => {
                 ticketData.Internal = internalTicket.content;
-                await db.set(`Ticket_${interaction.channel.id}_${randomId}`, ticketData);
+                await keyValueService.set('ticketDB', `Ticket_${interaction.channel.id}_${randomId}`, ticketData);
 
                 interaction.followUp({ content: '✅ تم إضافة الزر بنجاح.', ephemeral: true });
             });

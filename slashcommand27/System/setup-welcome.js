@@ -1,6 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { Database } = require('st.db');
-const systemDB = new Database('/Json-db/Bots/systemDB.json'); 
+const keyValueService = require("../../services/keyValueService");
 
 module.exports = {
     adminsOnly: true,
@@ -24,16 +23,16 @@ module.exports = {
         const role = interaction.options.getRole('role');
         const image = interaction.options.getString('image');
 
-        await systemDB.set(`welcome_channel_${interaction.guild.id}`, channel.id);
+        await keyValueService.set('systemDB', `welcome_channel_${interaction.guild.id}`, channel.id);
         if (role) {
-            await systemDB.set(`welcome_role_${interaction.guild.id}`, role.id);
+            await keyValueService.set('systemDB', `welcome_role_${interaction.guild.id}`, role.id);
         } else {
-            await systemDB.delete(`welcome_role_${interaction.guild.id}`);
+            await keyValueService.delete('systemDB', `welcome_role_${interaction.guild.id}`);
         }
         if (image) {
-            await systemDB.set(`welcome_image_${interaction.guild.id}`, image);
+            await keyValueService.set('systemDB', `welcome_image_${interaction.guild.id}`, image);
         } else {
-            await systemDB.delete(`welcome_image_${interaction.guild.id}`);
+            await keyValueService.delete('systemDB', `welcome_image_${interaction.guild.id}`);
         }
 
         await interaction.reply({ content: `تم تحديث الاعدادات بنجاح .`, ephemeral: true });

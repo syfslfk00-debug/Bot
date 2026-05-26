@@ -1,6 +1,6 @@
 const { Events, EmbedBuilder, ActionRowBuilder, ButtonStyle, ButtonBuilder } = require("discord.js");
-const { Database } = require('st.db');
-const db = new Database('/Json-db/Bots/ticketDB');
+const keyValueService = require("../services/keyValueService");
+
 const confirme = "هل انت متأكد من إغلاقك للتذكرة؟";
 const discordTranscripts = require('discord-html-transcripts');
 
@@ -22,8 +22,8 @@ module.exports = (client7) => {
 
 
       } else if (customId === 'Yes11') {
-        const id = db.get('closed');
-        const Ticket = db.get(`TICKET-PANEL_${interaction.channel.id}`);
+        const id = await keyValueService.get('ticketDB', 'closed');
+        const Ticket = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`);
 
         await interaction.channel.permissionOverwrites.edit(Ticket.author, { ViewChannel: false });
         const embed2 = new EmbedBuilder()
@@ -48,7 +48,7 @@ await interaction.editReply({
 });
 
 
-        const Logs = db.get(`LogsRoom_${interaction.guild.id}`);
+        const Logs = await keyValueService.get('ticketDB', `LogsRoom_${interaction.guild.id}`);
         const logChannel = interaction.guild.channels.cache.get(Logs);
         const embedLog = new EmbedBuilder()
           .setAuthor({ name: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
@@ -72,9 +72,9 @@ await interaction.editReply({
           await interaction.channel.delete();
         }, 5000);
 
-        const Logs = db.get(`LogsRoom_${interaction.guild.id}`);
+        const Logs = await keyValueService.get('ticketDB', `LogsRoom_${interaction.guild.id}`);
         const logChannel = interaction.guild.channels.cache.get(Logs);
-        const Ticket = db.get(`TICKET-PANEL_${interaction.channel.id}`);
+        const Ticket = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`);
         const embedLog = new EmbedBuilder()
           .setAuthor({ name: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
           .setTitle('Delete Ticket')
@@ -86,10 +86,10 @@ await interaction.editReply({
           .setFooter({ text: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() });
 
         logChannel?.send({ embeds: [embedLog] });
-        db.delete(`TICKET-PANEL_${interaction.channel.id}`);
+        await keyValueService.delete('ticketDB', `TICKET-PANEL_${interaction.channel.id}`);
 
       } else if (customId === 'Open') {
-        const Ticket = db.get(`TICKET-PANEL_${interaction.channel.id}`);
+        const Ticket = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`);
         await interaction.channel.permissionOverwrites.edit(Ticket?.author, { ViewChannel: true });
         await interaction.deferUpdate();
         await interaction.deleteReply();
@@ -98,11 +98,11 @@ await interaction.editReply({
         const channel = interaction.channel;
         const attachment = await discordTranscripts.createTranscript(channel);
 
-        const Logs = db.get(`LogsRoom_${interaction.guild.id}`);
-        const Trans = db.get(`TransRoom_${interaction.guild.id}`);
+        const Logs = await keyValueService.get('ticketDB', `LogsRoom_${interaction.guild.id}`);
+        const Trans = await keyValueService.get('ticketDB', `TransRoom_${interaction.guild.id}`);
         const logChannel = interaction.guild.channels.cache.get(Logs);
         const TransChannel = interaction.guild.channels.cache.get(Trans);
-        const Ticket = db.get(`TICKET-PANEL_${interaction.channel.id}`);
+        const Ticket = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`);
         if (!TransChannel) {
           await interaction.reply({ content: "لم يتم تحديد روم لوغ، استخدم /set-log لتحديده.", ephemeral: true });
           return;

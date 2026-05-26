@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder ,ButtonStyle, PermissionsBitField, ButtonBuilder, ActionRowBuilder } = require("discord.js");
-const { Database } = require("st.db")
-const db = new Database("/Json-db/Bots/taxDB")
+const keyValueService = require("../../services/keyValueService");
+
 module.exports = {
     adminsOnly:true,
     data: new SlashCommandBuilder()
@@ -13,7 +13,7 @@ module.exports = {
         .setRequired(true)), // or false
 async execute(interaction) {
     let room = interaction.options.getChannel(`room`)
-    await db.set(`tax_room_${interaction.guild.id}` , room.id)
+    await keyValueService.set('taxDB', `tax_room_${interaction.guild.id}` , room.id)
   
     return interaction.reply({content:`**تم تحديد الروم ${room} بنجاح**`})
 }

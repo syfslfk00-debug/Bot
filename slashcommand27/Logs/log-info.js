@@ -1,6 +1,5 @@
 const { SlashCommandBuilder, ChatInputCommandInteraction, Client, EmbedBuilder, PermissionsBitField } = require("discord.js");
-const { Database } = require("st.db");
-const db = new Database("/Json-db/Bots/logsDB.json");
+const keyValueService = require("../../services/keyValueService");
 
 module.exports = {
     ownersOnly:true,
@@ -15,22 +14,22 @@ module.exports = {
         await interaction.deferReply();
 
         // الرسائل
-        let messagedelete = await db.get(`log_messagedelete_${interaction.guild.id}`);
-        let messageupdate = await db.get(`log_messageupdate_${interaction.guild.id}`);
+        let messagedelete = await keyValueService.get('logsDB', `log_messagedelete_${interaction.guild.id}`);
+        let messageupdate = await keyValueService.get('logsDB', `log_messageupdate_${interaction.guild.id}`);
         // الرتب
-        let rolecreate = await db.get(`log_rolecreate_${interaction.guild.id}`);
-        let roledelete = await db.get(`log_roledelete_${interaction.guild.id}`);
-        let rolegive = await db.get(`log_rolegive_${interaction.guild.id}`);
-        let roleremove = await db.get(`log_roleremove_${interaction.guild.id}`);
+        let rolecreate = await keyValueService.get('logsDB', `log_rolecreate_${interaction.guild.id}`);
+        let roledelete = await keyValueService.get('logsDB', `log_roledelete_${interaction.guild.id}`);
+        let rolegive = await keyValueService.get('logsDB', `log_rolegive_${interaction.guild.id}`);
+        let roleremove = await keyValueService.get('logsDB', `log_roleremove_${interaction.guild.id}`);
         // الرومات
-        let channelcreate = await db.get(`log_channelcreate_${interaction.guild.id}`);
-        let channeldelete = await db.get(`log_channeldelete_${interaction.guild.id}`);
+        let channelcreate = await keyValueService.get('logsDB', `log_channelcreate_${interaction.guild.id}`);
+        let channeldelete = await keyValueService.get('logsDB', `log_channeldelete_${interaction.guild.id}`);
         // البوتات
-        let botadd = await db.get(`log_botadd_${interaction.guild.id}`);
+        let botadd = await keyValueService.get('logsDB', `log_botadd_${interaction.guild.id}`);
         // الباند و الطرد كيك
-        let banadd = await db.get(`log_banadd_${interaction.guild.id}`);
-        let bandelete = await db.get(`log_bandelete_${interaction.guild.id}`);
-        let kickadd = await db.get(`log_kickadd_${interaction.guild.id}`);
+        let banadd = await keyValueService.get('logsDB', `log_banadd_${interaction.guild.id}`);
+        let bandelete = await keyValueService.get('logsDB', `log_bandelete_${interaction.guild.id}`);
+        let kickadd = await keyValueService.get('logsDB', `log_kickadd_${interaction.guild.id}`);
 
         const embed = new EmbedBuilder()
             .setAuthor({ name: interaction.guild.name, iconURL: interaction.guild.iconURL({ dynamic: true }) })

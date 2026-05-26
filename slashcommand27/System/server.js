@@ -1,6 +1,6 @@
 const { Client, Collection,SlashCommandBuilder,ChannelType , discord,GatewayIntentBits, Partials , EmbedBuilder, ApplicationCommandOptionType , Events , ActionRowBuilder , ButtonBuilder ,MessageAttachment, ButtonStyle , Message } = require("discord.js");
-const { Database } = require("st.db")
-const systemDB = new Database("/Json-db/Bots/systemDB.json")
+const keyValueService = require("../../services/keyValueService");
+
 module.exports = {
     ownersOnly:false,
     data: new SlashCommandBuilder()

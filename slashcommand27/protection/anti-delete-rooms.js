@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder ,ButtonStyle, PermissionsBitField, ButtonBuilder, ActionRowBuilder } = require("discord.js");
-const { Database } = require("st.db")
-const db = new Database("/Json-db/Bots/protectDB.json")
+const keyValueService = require("../../services/keyValueService");
+
 module.exports = {
     ownersOnly:true,
     data: new SlashCommandBuilder()
@@ -28,9 +28,9 @@ async execute(interaction) {
     try {
       const status = interaction.options.getString(`status`)
       const limit = interaction.options.getInteger(`limit`)
-      await db.set(`antideleterooms_status_${interaction.guild.id}` , status)
-      await db.set(`antideleterooms_limit_${interaction.guild.id}` , limit)
-      await db.set(`roomsdelete_users_${interaction.guild.id}` , [])
+      await keyValueService.set('protectDB', `antideleterooms_status_${interaction.guild.id}` , status)
+      await keyValueService.set('protectDB', `antideleterooms_limit_${interaction.guild.id}` , limit)
+      await keyValueService.set('protectDB', `roomsdelete_users_${interaction.guild.id}` , [])
               return interaction.editReply({content:`**تم بنجاح تعيين نظام الحماية من البان \n - تاكد من رفع رتبتي لاعلى رتبة في السيرفر**`})
     } catch {
     }

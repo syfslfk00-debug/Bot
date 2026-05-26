@@ -1,3 +1,4 @@
+const keyValueService = require("../../services/keyValueService");
 const {
   SlashCommandBuilder,
   EmbedBuilder,
@@ -7,9 +8,6 @@ const {
   MessageComponentCollector,
   ButtonStyle,
 } = require("discord.js");
-const { Database } = require("st.db");
-const applyDB = new Database("/Json-db/Bots/applyDB.json");
-
 
 module.exports = {
   adminsOnly:true,
@@ -44,10 +42,10 @@ module.exports = {
       .setColor('Grey');
     let type = interaction.options.getString(`type`);
     if(type === "enable"){
-        applyDB.set(`dm_${interaction.guild.id}` , true)
+        await keyValueService.set('applyDB', `dm_${interaction.guild.id}` , true)
         embed1.setTitle(`**تم تفعيل نظام الخاص**`)
     }else if(type === "disable"){
-        applyDB.set(`dm_${interaction.guild.id}` , false)
+        await keyValueService.set('applyDB', `dm_${interaction.guild.id}` , false)
         embed1.setTitle(`**تم تعطيل نظام الخاص**`)
     }
     return interaction.editReply({ embeds: [embed1] });

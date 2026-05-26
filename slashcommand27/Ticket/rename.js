@@ -1,6 +1,5 @@
 const { SlashCommandBuilder } = require("discord.js");
-const { Database } = require("st.db");
-const db = new Database("/Json-db/Bots/ticketDB");
+const keyValueService = require("../../services/keyValueService");
 
 module.exports = {
     adminsOnly: false,
@@ -18,15 +17,15 @@ module.exports = {
      * @param { import('discord.js').ChatInputCommandInteraction } interaction 
      */
     async execute(interaction) {
-        const dd = new Database("/Json-db/Bots/ticketDB");
-        const supportRoleID = dd.get(`TICKET-PANEL_${interaction.channel.id}`)?.Support;
+
+        const supportRoleID = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`)?.Support;
 
         if (!interaction.member.roles.cache.has(supportRoleID)) {
             return interaction.reply({ content: `:x: You do not have permission to rename this ticket.`, ephemeral: true });
         }
 
         const newName = interaction.options.getString('name');
-        const ticketData = db.get(`TICKET-PANEL_${interaction.channel.id}`);
+        const ticketData = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`);
         
         if (!ticketData) {
             return interaction.reply({ content: `> This channel isn't a ticket`, ephemeral: true });

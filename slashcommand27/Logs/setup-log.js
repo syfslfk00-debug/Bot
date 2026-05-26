@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder , PermissionsBitField } = require("discord.js");
-const { Database } = require("st.db")
-const db = new Database("/Json-db/Bots/logsDB.json")
+const keyValueService = require("../../services/keyValueService");
+
 module.exports = {
     ownersOnly:true,
     data: new SlashCommandBuilder()
@@ -80,40 +80,40 @@ async execute(interaction) {
             let bandelete = interaction.options.getChannel(`bandelete`)
             let kickadd = interaction.options.getChannel(`kickadd`)
             if(messagedelete) {
-                await db.set(`log_messagedelete_${interaction.guild.id}` , messagedelete.id)
+                await keyValueService.set('logsDB', `log_messagedelete_${interaction.guild.id}` , messagedelete.id)
             }
             if(messageupdate) {
-                await db.set(`log_messageupdate_${interaction.guild.id}` , messageupdate.id)
+                await keyValueService.set('logsDB', `log_messageupdate_${interaction.guild.id}` , messageupdate.id)
             }
             if(rolecreate) {
-                await db.set(`log_rolecreate_${interaction.guild.id}` , rolecreate.id)
+                await keyValueService.set('logsDB', `log_rolecreate_${interaction.guild.id}` , rolecreate.id)
             }
             if(roledelete) {
-                await db.set(`log_roledelete_${interaction.guild.id}` , roledelete.id)
+                await keyValueService.set('logsDB', `log_roledelete_${interaction.guild.id}` , roledelete.id)
             }
             if(rolegive) {
-                await db.set(`log_rolegive_${interaction.guild.id}` , rolegive.id)
+                await keyValueService.set('logsDB', `log_rolegive_${interaction.guild.id}` , rolegive.id)
             }
             if(roleremove) {
-                await db.set(`log_roleremove_${interaction.guild.id}` , roleremove.id)
+                await keyValueService.set('logsDB', `log_roleremove_${interaction.guild.id}` , roleremove.id)
             }
             if(channelcreate) {
-                await db.set(`log_channelcreate_${interaction.guild.id}` , channelcreate.id)
+                await keyValueService.set('logsDB', `log_channelcreate_${interaction.guild.id}` , channelcreate.id)
             }
             if(channeldelete) {
-                await db.set(`log_channeldelete_${interaction.guild.id}` , channeldelete.id)
+                await keyValueService.set('logsDB', `log_channeldelete_${interaction.guild.id}` , channeldelete.id)
             }
             if(botadd) {
-                await db.set(`log_botadd_${interaction.guild.id}` , botadd.id)
+                await keyValueService.set('logsDB', `log_botadd_${interaction.guild.id}` , botadd.id)
             }
             if(banadd) {
-                await db.set(`log_banadd_${interaction.guild.id}` , banadd.id)
+                await keyValueService.set('logsDB', `log_banadd_${interaction.guild.id}` , banadd.id)
             }
             if(bandelete) {
-                await db.set(`log_bandelete_${interaction.guild.id}` , bandelete.id)
+                await keyValueService.set('logsDB', `log_bandelete_${interaction.guild.id}` , bandelete.id)
             }
             if(kickadd) {
-                await db.set(`log_kickadd_${interaction.guild.id}` , kickadd.id)
+                await keyValueService.set('logsDB', `log_kickadd_${interaction.guild.id}` , kickadd.id)
             }
             return interaction.reply({content:`**تم تحديد الاعدادات بنجاح**`})
 }

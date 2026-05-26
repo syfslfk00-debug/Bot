@@ -1,6 +1,5 @@
 const { SlashCommandBuilder } = require("discord.js");
-const { Database } = require("st.db");
-const shortcutDB = new Database("/Json-db/Bots/ticketDB.json");
+const keyValueService = require("../../services/keyValueService");
 
 module.exports = {
     adminsOnly: true,
@@ -41,7 +40,7 @@ module.exports = {
                 return interaction.reply({ content: "هناك خطأ", ephemeral: true });
             }
 
-            await shortcutDB.set(key, room.id);
+            await keyValueService.set('ticketDB', key, room.id);
 
             return interaction.reply({ content: `**تم تحديد الروم <#${room.id}> بنجاح .**` });
         } catch (error) {

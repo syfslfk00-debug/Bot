@@ -1,6 +1,5 @@
 const { SlashCommandBuilder } = require("discord.js");
-const { Database } = require("st.db");
-const db = new Database("/Json-db/Bots/BroadcastDB");
+const keyValueService = require("../../services/keyValueService");
 
 module.exports = {
     ownersOnly: false,

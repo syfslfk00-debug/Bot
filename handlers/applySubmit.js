@@ -1,13 +1,11 @@
 const { SlashCommandBuilder,Events , ActivityType,ModalBuilder,TextInputStyle, EmbedBuilder , PermissionsBitField,ButtonStyle, TextInputBuilder, ActionRowBuilder,ButtonBuilder,MessageComponentCollector, Embed } = require("discord.js");
-const { Database } = require("st.db")
-
-const applyDB = new Database("/Json-db/Bots/applyDB.json")
+const keyValueService = require("../services/keyValueService");
 
 module.exports = (client13) => {
     client13.on(Events.InteractionCreate , async(interaction) =>{
     if(interaction.isModalSubmit() && interaction.customId == "modal_apply") {
         // الحصول على الاسئله
-        const questions = applyDB.get(`apply_${interaction.guild.id}`);
+        const questions = await keyValueService.get('applyDB', `apply_${interaction.guild.id}`);
         let qu_1 = questions.ask1 ?? 'غير محدد'
         let qu_2 = questions.ask2 ?? 'غير محدد'
         let qu_3 = questions.ask3 ?? 'غير محدد'
@@ -15,7 +13,7 @@ module.exports = (client13) => {
         let qu_5 = questions.ask5 ?? 'غير محدد'
 
         // الحصول على الاجوبة و روم التقديمات
-        const settings =  applyDB.get(`apply_settings_${interaction.guild.id}`)
+        const settings =  await keyValueService.get('applyDB', `apply_settings_${interaction.guild.id}`)
         let appliesroom = settings.appliesroom
 
         let ask_1 = null;

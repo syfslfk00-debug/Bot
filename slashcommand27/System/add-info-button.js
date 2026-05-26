@@ -1,7 +1,6 @@
 const { SlashCommandBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
-const { Database } = require('st.db');
+const keyValueService = require("../../services/keyValueService");
 const { v4: uuidv4 } = require('uuid');
-const buttonsDB = new Database("/Json-db/Bots/systemDB.json");
 
 module.exports = {
     adminsOnly: true,
@@ -85,7 +84,7 @@ module.exports = {
 
             const messageContent = collected.first().content;
 
-            await buttonsDB.set(`${guildId}_${buttonId}`, messageContent);
+            await keyValueService.set('systemDB', `${guildId}_${buttonId}`, messageContent);
 
             await interaction.followUp({
                 content: 'تم حفظ الرسالة وربطها بالزر بنجاح!',

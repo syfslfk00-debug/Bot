@@ -1,6 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder , PermissionsBitField, ActionRowBuilder,ButtonBuilder,MessageComponentCollector,ButtonStyle } = require("discord.js");
-const { Database } = require("st.db")
-const applyDB = new Database("/Json-db/Bots/applyDB.json")
+const keyValueService = require("../../services/keyValueService");
 
 module.exports ={
     adminsOnly:true,
@@ -14,12 +13,12 @@ module.exports ={
         .setAuthor({name:interaction.guild.name , iconURL:interaction.guild.iconURL({dynamic:true})})
         .setTimestamp(Date.now())
         .setColor('#000000')
-        let apply = await applyDB.get(`apply_${interaction.guild.id}`)
+        let apply = await keyValueService.get('applyDB', `apply_${interaction.guild.id}`)
         if(!apply) {
             embed1.setTitle(`** لا يوجد تقديم مفتوح حاليا**`)
             return interaction.editReply({embeds:[embed1]})
         }
-        await applyDB.delete(`apply_${interaction.guild.id}`)
+        await keyValueService.delete('applyDB', `apply_${interaction.guild.id}`)
         embed1.setTitle(`**تم انهاء التقديم بنجاح**`)
         return interaction.editReply({embeds:[embed1]})
     }

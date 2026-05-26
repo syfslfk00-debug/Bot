@@ -1,6 +1,5 @@
 const { SlashCommandBuilder } = require("discord.js");
-const { Database } = require("st.db");
-const feedbackDB = new Database("/Json-db/Bots/feedbackDB.json");
+const keyValueService = require("../../services/keyValueService");
 
 module.exports = {
     adminsOnly: true,
@@ -24,8 +23,8 @@ module.exports = {
             const role = interaction.options.getRole('staff-role');
             const room = interaction.options.getChannel('rank-room');
 
-            await feedbackDB.set(`staff_role_${interaction.guild.id}`, role.id);
-            await feedbackDB.set(`rank_room_${interaction.guild.id}`, room.id);
+            await keyValueService.set('feedbackDB', `staff_role_${interaction.guild.id}`, role.id);
+            await keyValueService.set('feedbackDB', `rank_room_${interaction.guild.id}`, room.id);
 
             return interaction.reply({ content: '**تم تحديد الاعدادات بنجاح**' });
         } catch (error) {

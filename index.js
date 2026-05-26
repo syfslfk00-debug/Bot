@@ -15,21 +15,20 @@ const {
   ActivityType
 } = require("discord.js");
 const moment = require("moment");
+const keyValueService = require("./services/keyValueService");
 const ms = require("ms");
-const { Database } = require("st.db");
-const taxDB = new Database("/Json-db/Bots/taxDB.json");
-const autolineDB = new Database("/Json-db/Bots/autolineDB.json");
-const suggestionsDB = new Database("/Json-db/Bots/suggestionsDB.json");
-const feedbackDB = new Database("/Json-db/Bots/feedbackDB.json");
-const giveawayDB = new Database("/Json-db/Bots/giveawayDB.json");
-const systemDB = new Database("/Json-db/Bots/systemDB.json");
-const shortcutDB = new Database("/Json-db/Others/shortcutDB.json");
-const protectDB = new Database("/Json-db/Bots/protectDB.json");
-const db = new Database("/Json-db/Bots/BroadcastDB");
-const logsDB = new Database("/Json-db/Bots/logsDB.json");
-const nadekoDB = new Database("/Json-db/Bots/nadekoDB.json");
-const CookiesDB = new Database("/Json-db/Bots/CookiesDB.json");
-const ticketDB = new Database("/Json-db/Bots/ticketDB.json");
+
+
+
+
+
+
+
+
+
+
+
+
 
 const path = require("path");
 const { readdirSync } = require("fs");
@@ -193,9 +192,9 @@ client27.on("interactionCreate", async (interaction) => {
 // ── Giveaway System (fixed) ──
 client27.on("ready", async () => {
   let theguild = client27.guilds.cache.first();
-  setInterval(() => {
+  setInterval(async () => {
     if (!theguild) return;
-    let giveaways = giveawayDB.get(`giveaways_${theguild.id}`);
+    let giveaways = await keyValueService.get('giveawayDB', `giveaways_${theguild.id}`);
     if (!giveaways || !Array.isArray(giveaways)) return;
     giveaways.forEach(async (giveaway) => {
       let {
@@ -212,11 +211,11 @@ client27.on("ready", async () => {
       if (duration > 0) {
         duration = duration - 1;
         giveaway.duration = duration;
-        await giveawayDB.set(`giveaways_${theguild.id}`, giveaways);
+        await keyValueService.set('giveawayDB', `giveaways_${theguild.id}`, giveaways);
       } else if (duration == 0) {
         duration = duration - 1;
         giveaway.duration = duration;
-        await giveawayDB.set(`giveaways_${theguild.id}`, giveaways);
+        await keyValueService.set('giveawayDB', `giveaways_${theguild.id}`, giveaways);
         const theroom = theguild.channels.cache.find(
           (ch) => ch.id == channelid
         );
@@ -244,7 +243,7 @@ client27.on("ready", async () => {
             content: `Congratulations ${theWinners}! You won the **${prize}**!`,
           });
           giveaway.ended = true;
-          await giveawayDB.set(`giveaways_${theguild.id}`, giveaways);
+          await keyValueService.set('giveawayDB', `giveaways_${theguild.id}`, giveaways);
         } else {
           const button = new ButtonBuilder()
             .setEmoji(`🎉`)
@@ -255,7 +254,7 @@ client27.on("ready", async () => {
           themsg.edit({ components: [row] });
           themsg.reply({ content: `**لا يوجد عدد من المشتركين كافي**` });
           giveaway.ended = true;
-          await giveawayDB.set(`giveaways_${theguild.id}`, giveaways);
+          await keyValueService.set('giveawayDB', `giveaways_${theguild.id}`, giveaways);
         }
       }
     });
@@ -265,10 +264,10 @@ client27.on("ready", async () => {
 // ── Tax Auto System ──
 client27.on("messageCreate", async (message) => {
   if (message.author.bot) return;
-  let roomid = taxDB.get(`tax_room_${message.guild.id}`);
-  let taxLine = taxDB.get(`tax_line_${message.guild.id}`);
-  let taxMode = taxDB.get(`tax_mode_${message.guild.id}`) || "embed";
-  let taxColor = taxDB.get(`tax_color_${message.guild.id}`) || "#0099FF";
+  let roomid = await keyValueService.get('taxDB', `tax_room_${message.guild.id}`);
+  let taxLine = await keyValueService.get('taxDB', `tax_line_${message.guild.id}`);
+  let taxMode = await keyValueService.get('taxDB', `tax_mode_${message.guild.id}`) || "embed";
+  let taxColor = await keyValueService.get('taxDB', `tax_color_${message.guild.id}`) || "#0099FF";
 
   if (roomid && message.channel.id === roomid) {
     let number = message.content;
@@ -319,8 +318,8 @@ client27.on("messageCreate", async (message) => {
 // ── Autoline manual and auto ──
 client27.on("messageCreate", async (message) => {
   if (message.author.bot) return;
-  const line = autolineDB.get(`line_${message.guild.id}`);
-  const lineMode = autolineDB.get(`line_mode_${message.guild.id}`) || "image";
+  const line = await keyValueService.get('autolineDB', `line_${message.guild.id}`);
+  const lineMode = await keyValueService.get('autolineDB', `line_mode_${message.guild.id}`) || "image";
 
   if (
     (message.content === "-" || message.content === "خط") &&
@@ -336,7 +335,7 @@ client27.on("messageCreate", async (message) => {
   }
 
   // Auto line channels
-  const autoChannels = autolineDB.get(`line_channels_${message.guild.id}`);
+  const autoChannels = await keyValueService.get('autolineDB', `line_channels_${message.guild.id}`);
   if (autoChannels && autoChannels.length > 0 && autoChannels.includes(message.channel.id)) {
     if (line) {
       if (lineMode === "link") {
@@ -504,7 +503,7 @@ client27.on("messageCreate", async (message) => {
     }
 
     allMembers = allMembers.map((mem) => mem.user.id);
-    const thetokens = db.get(`tokens_${message.guild.id}`) || [];
+    const thetokens = await keyValueService.get('BroadcastDB', `tokens_${message.guild.id}`) || [];
     const botsNum = thetokens.length;
     if (botsNum === 0) return message.reply("لا يوجد بوتات برودكاست مضافة.");
     const membersPerBot = Math.floor(allMembers.length / botsNum);
@@ -565,7 +564,7 @@ client27.on("messageCreate", async (message) => {
 
 // ── Staff feedback rating ──
 client27.on("messageCreate", async (message) => {
-  const cmd = (await shortcutDB.get(`rate_cmd_${message.guild.id}`)) || null;
+  const cmd = (await keyValueService.get('shortcutDB', `rate_cmd_${message.guild.id}`)) || null;
   if (
     message.author.bot ||
     (message.content !== `${prefix}تقييم` && message.content !== `${cmd}`)
@@ -573,7 +572,7 @@ client27.on("messageCreate", async (message) => {
     return;
 
   const stafer = message.author;
-  const staffRole = await feedbackDB.get(`staff_role_${message.guild.id}`);
+  const staffRole = await keyValueService.get('feedbackDB', `staff_role_${message.guild.id}`);
   if (!message.member.roles.cache.has(staffRole)) return;
 
   const filter = (response) =>
@@ -587,7 +586,7 @@ client27.on("messageCreate", async (message) => {
         .then(async (collected) => {
           const user = collected.first().author;
           const userText = collected.first().content;
-          const rankroom = feedbackDB.get(`rank_room_${message.guild.id}`);
+          const rankroom = await keyValueService.get('feedbackDB', `rank_room_${message.guild.id}`);
 
           const st1 = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId("1star").setLabel("نجمة 1").setEmoji(`⭐`).setStyle(ButtonStyle.Danger),
@@ -649,11 +648,11 @@ client27.on("messageCreate", async (message) => {
 // ── Suggestions system ──
 client27.on("messageCreate", async (message) => {
   if (message.author.bot) return;
-  const line = suggestionsDB.get(`line_${message.guild.id}`);
-  const chan = suggestionsDB.get(`suggestions_room_${message.guild.id}`);
+  const line = await keyValueService.get('suggestionsDB', `line_${message.guild.id}`);
+  const chan = await keyValueService.get('suggestionsDB', `suggestions_room_${message.guild.id}`);
   if (!chan || message.channel.id !== chan) return;
-  const suggestionMode = suggestionsDB.get(`suggestion_mode_${message.guild.id}`) || "buttons";
-  const threadMode = suggestionsDB.get(`thread_mode_${message.guild.id}`) || "enabled";
+  const suggestionMode = await keyValueService.get('suggestionsDB', `suggestion_mode_${message.guild.id}`) || "buttons";
+  const threadMode = await keyValueService.get('suggestionsDB', `thread_mode_${message.guild.id}`) || "enabled";
 
   const embed = new EmbedBuilder()
     .setColor("Random")
@@ -674,8 +673,8 @@ client27.on("messageCreate", async (message) => {
       });
     }
     if (line) await message.channel.send({ files: [line] }).catch(() => {});
-    await suggestionsDB.set(`${send.id}_ok`, 0);
-    await suggestionsDB.set(`${send.id}_no`, 0);
+    await keyValueService.set('suggestionsDB', `${send.id}_ok`, 0);
+    await keyValueService.set('suggestionsDB', `${send.id}_no`, 0);
     return message.delete();
   } else if (suggestionMode === "reactions") {
     let send = await message.channel.send({ embeds: [embed] }).catch(() => { return; });
@@ -694,11 +693,11 @@ client27.on("messageCreate", async (message) => {
 // ── Feedback system ──
 client27.on("messageCreate", async (message) => {
   if (message.author.bot) return;
-  const line = feedbackDB.get(`line_${message.guild.id}`);
-  const chan = feedbackDB.get(`feedback_room_${message.guild.id}`);
+  const line = await keyValueService.get('feedbackDB', `line_${message.guild.id}`);
+  const chan = await keyValueService.get('feedbackDB', `feedback_room_${message.guild.id}`);
   if (!chan || message.channel.id !== chan) return;
-  const feedbackMode = feedbackDB.get(`feedback_mode_${message.guild.id}`) || "embed";
-  const feedbackEmoji = feedbackDB.get(`feedback_emoji_${message.guild.id}`) || "❤";
+  const feedbackMode = await keyValueService.get('feedbackDB', `feedback_mode_${message.guild.id}`) || "embed";
+  const feedbackEmoji = await keyValueService.get('feedbackDB', `feedback_emoji_${message.guild.id}`) || "❤";
 
   const embed = new EmbedBuilder()
     .setColor("Random")
@@ -724,9 +723,9 @@ client27.on("messageCreate", async (message) => {
 client27.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   if (message.content == `${prefix}close`) {
-    const supportRoleID = ticketDB.get(`TICKET-PANEL_${message.channel.id}`)?.Support;
+    const supportRoleID = await keyValueService.get('ticketDB', `TICKET-PANEL_${message.channel.id}`)?.Support;
     /* if (!message.member.roles.cache.has(supportRoleID)) { ... } */
-    const ticket = ticketDB.get(`TICKET-PANEL_${message.channel.id}`);
+    const ticket = await keyValueService.get('ticketDB', `TICKET-PANEL_${message.channel.id}`);
     if (!ticket) return message.reply("هذه ليست تذكرة.");
 
     await message.channel.permissionOverwrites.edit(ticket.author, { ViewChannel: false });
@@ -747,7 +746,7 @@ client27.on("messageCreate", async (message) => {
 
     await message.reply({ embeds: [embed2, embed], components: [row] });
 
-    const logsRoomId = ticketDB.get(`LogsRoom_${message.guild.id}`);
+    const logsRoomId = await keyValueService.get('ticketDB', `LogsRoom_${message.guild.id}`);
     const logChannel = message.guild.channels.cache.get(logsRoomId);
     if (logChannel) {
       const logEmbed = new EmbedBuilder()
@@ -764,11 +763,11 @@ client27.on("messageCreate", async (message) => {
   }
 
   if (message.content == `${prefix}delete`) {
-    const supportRoleId = ticketDB.get(`TICKET-PANEL_${message.channel.id}`)?.Support;
+    const supportRoleId = await keyValueService.get('ticketDB', `TICKET-PANEL_${message.channel.id}`)?.Support;
     if (!message.member.roles.cache.has(supportRoleId)) {
       return message.reply({ content: ":x: Only Support", ephemeral: true });
     }
-    if (!ticketDB.has(`TICKET-PANEL_${message.channel.id}`)) {
+    if (!await keyValueService.has('ticketDB', `TICKET-PANEL_${message.channel.id}`)) {
       return message.reply({ content: "This channel isn't a ticket", ephemeral: true });
     }
     const embed = new EmbedBuilder().setColor("Red").setDescription("Ticket will be deleted in a few seconds");
@@ -778,9 +777,9 @@ client27.on("messageCreate", async (message) => {
       message.channel.delete();
     }, 4500);
 
-    const Logs = ticketDB.get(`LogsRoom_${message.guild.id}`);
+    const Logs = await keyValueService.get('ticketDB', `LogsRoom_${message.guild.id}`);
     const Log = message.guild.channels.cache.get(Logs);
-    const Ticket = ticketDB.get(`TICKET-PANEL_${message.channel.id}`);
+    const Ticket = await keyValueService.get('ticketDB', `TICKET-PANEL_${message.channel.id}`);
     const logEmbed = new EmbedBuilder()
       .setAuthor({ name: message.author.tag, iconURL: message.author.displayAvatarURL() })
       .setTitle("Delete Ticket")
@@ -791,14 +790,14 @@ client27.on("messageCreate", async (message) => {
       )
       .setFooter({ text: message.author.tag, iconURL: message.author.displayAvatarURL() });
     Log?.send({ embeds: [logEmbed] });
-    ticketDB.delete(`TICKET-PANEL_${message.channel.id}`);
+    await keyValueService.delete('ticketDB', `TICKET-PANEL_${message.channel.id}`);
   }
 });
 
 // ── Say, Clear, Tax, Come, Lock, Unlock, Hide, Unhide, Server commands ──
 client27.on("messageCreate", async (message) => {
   if (message.author.bot) return;
-  const cmdSay = (await shortcutDB.get(`say_cmd_${message.guild.id}`)) || null;
+  const cmdSay = (await keyValueService.get('shortcutDB', `say_cmd_${message.guild.id}`)) || null;
   if (
     message.content.startsWith(`${prefix}say`) ||
     (cmdSay && message.content.startsWith(`${cmdSay}`))
@@ -812,7 +811,7 @@ client27.on("messageCreate", async (message) => {
     await message.channel.send({ content: content, files: image ? [image] : [] });
   }
 
-  const cmdClear = shortcutDB.get(`clear_cmd_${message.guild.id}`) || null;
+  const cmdClear = await keyValueService.get('shortcutDB', `clear_cmd_${message.guild.id}`) || null;
   if (
     message.content.startsWith(`${prefix}clear`) ||
     (cmdClear && message.content.startsWith(`${cmdClear}`))
@@ -833,7 +832,7 @@ client27.on("messageCreate", async (message) => {
     }
   }
 
-  const cmdTax = (await shortcutDB.get(`tax_cmd_${message.guild.id}`)) || null;
+  const cmdTax = (await keyValueService.get('shortcutDB', `tax_cmd_${message.guild.id}`)) || null;
   if (
     message.content.startsWith(`${prefix}tax`) ||
     (cmdTax && message.content.startsWith(`${cmdTax}`))
@@ -852,7 +851,7 @@ client27.on("messageCreate", async (message) => {
     await message.reply(`${tax}`);
   }
 
-  const cmdCome = (await shortcutDB.get(`come_cmd_${message.guild.id}`)) || null;
+  const cmdCome = (await keyValueService.get('shortcutDB', `come_cmd_${message.guild.id}`)) || null;
   if (
     message.content.startsWith(`${prefix}come`) ||
     (cmdCome && message.content.startsWith(`${cmdCome}`))
@@ -871,7 +870,7 @@ client27.on("messageCreate", async (message) => {
     }
   }
 
-  const cmdLock = (await shortcutDB.get(`lock_cmd_${message.guild.id}`)) || null;
+  const cmdLock = (await keyValueService.get('shortcutDB', `lock_cmd_${message.guild.id}`)) || null;
   if (
     message.content === `${prefix}lock` ||
     (cmdLock && message.content === `${cmdLock}`)
@@ -884,7 +883,7 @@ client27.on("messageCreate", async (message) => {
     return message.reply({ content: `**${message.channel} has been locked**` });
   }
 
-  const cmdUnlock = (await shortcutDB.get(`unlock_cmd_${message.guild.id}`)) || null;
+  const cmdUnlock = (await keyValueService.get('shortcutDB', `unlock_cmd_${message.guild.id}`)) || null;
   if (
     message.content === `${prefix}unlock` ||
     (cmdUnlock && message.content === `${cmdUnlock}`)
@@ -897,7 +896,7 @@ client27.on("messageCreate", async (message) => {
     return message.reply({ content: `**${message.channel} has been unlocked**` });
   }
 
-  const cmdHide = (await shortcutDB.get(`hide_cmd_${message.guild.id}`)) || null;
+  const cmdHide = (await keyValueService.get('shortcutDB', `hide_cmd_${message.guild.id}`)) || null;
   if (
     message.content === `${prefix}hide` ||
     (cmdHide && message.content === `${cmdHide}`)
@@ -910,7 +909,7 @@ client27.on("messageCreate", async (message) => {
     return message.reply({ content: `**${message.channel} has been hidden**` });
   }
 
-  const cmdUnhide = (await shortcutDB.get(`unhide_cmd_${message.guild.id}`)) || null;
+  const cmdUnhide = (await keyValueService.get('shortcutDB', `unhide_cmd_${message.guild.id}`)) || null;
   if (
     message.content === `${prefix}unhide` ||
     (cmdUnhide && message.content === `${cmdUnhide}`)
@@ -923,7 +922,7 @@ client27.on("messageCreate", async (message) => {
     return message.reply({ content: `**${message.channel} has been unhidded**` });
   }
 
-  const cmdServer = (await shortcutDB.get(`server_cmd_${message.guild.id}`)) || null;
+  const cmdServer = (await keyValueService.get('shortcutDB', `server_cmd_${message.guild.id}`)) || null;
   if (
     message.content === `${prefix}server` ||
     (cmdServer && message.content === `${cmdServer}`)
@@ -946,11 +945,11 @@ client27.on("messageCreate", async (message) => {
 
 // ── Protection: Anti-bots ──
 client27.on("guildMemberAdd", async (member) => {
-  if (protectDB.has(`antibots_status_${member.guild.id}`)) {
-    let antibotsstatus = protectDB.get(`antibots_status_${member.guild.id}`);
+  if (await keyValueService.has('protectDB', `antibots_status_${member.guild.id}`)) {
+    let antibotsstatus = await keyValueService.get('protectDB', `antibots_status_${member.guild.id}`);
     if (antibotsstatus == "on" && member.user.bot) {
       try {
-        const logRoom = await protectDB.get(`protectLog_room_${member.guild.id}`);
+        const logRoom = await keyValueService.get('protectDB', `protectLog_room_${member.guild.id}`);
         if (logRoom) {
           const theLogRoom = await member.guild.channels.cache.find((ch) => ch.id == logRoom);
           theLogRoom.send({
@@ -978,10 +977,10 @@ client27.on("ready", async () => {
   const guild = client27.guilds.cache.first();
   if (!guild) return;
   const guildid = guild.id;
-  let status = protectDB.get(`antideleterooms_status_${guildid}`);
+  let status = await keyValueService.get('protectDB', `antideleterooms_status_${guildid}`);
   if (!status || status == "off") return;
-  setInterval(() => {
-    const users = protectDB.get(`roomsdelete_users_${guildid}`);
+  setInterval(async () => {
+    const users = await keyValueService.get('protectDB', `roomsdelete_users_${guildid}`);
     if (!Array.isArray(users) || users.length === 0) return;
     users.forEach(async (user) => {
       const { userid, limit, newReset } = user;
@@ -991,9 +990,9 @@ client27.on("ready", async () => {
         let executordb = { userid: userid, limit: 0, newReset: newResetDate };
         const index = users.findIndex((u) => u.userid === userid);
         users[index] = executordb;
-        await protectDB.set(`roomsdelete_users_${guildid}`, users);
+        await keyValueService.set('protectDB', `roomsdelete_users_${guildid}`, users);
       }
-      let limitrooms = protectDB.get(`antideleterooms_limit_${guildid}`);
+      let limitrooms = await keyValueService.get('protectDB', `antideleterooms_limit_${guildid}`);
       if (limit > limitrooms) {
         let member = guild.members.cache.find((m) => m.id == userid);
         try {
@@ -1006,7 +1005,7 @@ client27.on("ready", async () => {
 
 client27.on("channelDelete", async (channel) => {
   let guildid = channel.guild.id;
-  let status = protectDB.get(`antideleterooms_status_${guildid}`);
+  let status = await keyValueService.get('protectDB', `antideleterooms_status_${guildid}`);
   if (!status || status == "off") return;
   const fetchedLogs = await channel.guild.fetchAuditLogs({
     limit: 1,
@@ -1015,27 +1014,27 @@ client27.on("channelDelete", async (channel) => {
   const channelDeleteLog = fetchedLogs.entries.first();
   if (!channelDeleteLog) return;
   const { executor } = channelDeleteLog;
-  const users = protectDB.get(`roomsdelete_users_${guildid}`) || [];
+  const users = await keyValueService.get('protectDB', `roomsdelete_users_${guildid}`) || [];
   const endTime = moment().add(1, "day").format("YYYY-MM-DD");
   if (users.length <= 0) {
-    await protectDB.push(`roomsdelete_users_${guildid}`, { userid: executor.id, limit: 1, newReset: endTime });
+    await keyValueService.push('protectDB', `roomsdelete_users_${guildid}`, { userid: executor.id, limit: 1, newReset: endTime });
     return;
   }
   let executordb = users.find((user) => user.userid == executor.id);
   if (!executordb) {
-    await protectDB.push(`roomsdelete_users_${guildid}`, { userid: executor.id, limit: 1, newReset: endTime });
+    await keyValueService.push('protectDB', `roomsdelete_users_${guildid}`, { userid: executor.id, limit: 1, newReset: endTime });
     return;
   }
   let newexecutorlimit = executordb.limit + 1;
   executordb = { userid: executor.id, limit: newexecutorlimit, newReset: endTime };
   const index = users.findIndex((user) => user.userid === executor.id);
   users[index] = executordb;
-  let deletelimit = protectDB.get(`antideleterooms_limit_${guildid}`);
+  let deletelimit = await keyValueService.get('protectDB', `antideleterooms_limit_${guildid}`);
   if (newexecutorlimit > deletelimit) {
     let guild = client27.guilds.cache.find((gu) => gu.id == guildid);
     let member = guild.members.cache.find((ex) => ex.id == executor.id);
     try {
-      const logRoom = await protectDB.get(`protectLog_room_${member.guild.id}`);
+      const logRoom = await keyValueService.get('protectDB', `protectLog_room_${member.guild.id}`);
       if (logRoom) {
         const theLogRoom = await member.guild.channels.cache.find((ch) => ch.id == logRoom);
         theLogRoom.send({
@@ -1051,9 +1050,9 @@ client27.on("channelDelete", async (channel) => {
       member.kick();
     } catch {}
     let filtered = users.filter((a) => a.userid != executor.id);
-    await protectDB.set(`roomsdelete_users_${guildid}`, filtered);
+    await keyValueService.set('protectDB', `roomsdelete_users_${guildid}`, filtered);
   } else {
-    await protectDB.set(`roomsdelete_users_${guildid}`, users);
+    await keyValueService.set('protectDB', `roomsdelete_users_${guildid}`, users);
   }
 });
 
@@ -1062,10 +1061,10 @@ client27.on("ready", async () => {
   const guild = client27.guilds.cache.first();
   if (!guild) return;
   const guildid = guild.id;
-  let status = protectDB.get(`antideleteroles_status_${guildid}`);
+  let status = await keyValueService.get('protectDB', `antideleteroles_status_${guildid}`);
   if (!status || status == "off") return;
-  setInterval(() => {
-    const users = protectDB.get(`rolesdelete_users_${guildid}`);
+  setInterval(async () => {
+    const users = await keyValueService.get('protectDB', `rolesdelete_users_${guildid}`);
     if (!Array.isArray(users) || users.length === 0) return;
     users.forEach(async (user) => {
       const { userid, limit, newReset } = user;
@@ -1075,9 +1074,9 @@ client27.on("ready", async () => {
         let executordb = { userid: userid, limit: 0, newReset: newResetDate };
         const index = users.findIndex((u) => u.userid === userid);
         users[index] = executordb;
-        await protectDB.set(`rolesdelete_users_${guildid}`, users);
+        await keyValueService.set('protectDB', `rolesdelete_users_${guildid}`, users);
       }
-      let limitrooms = protectDB.get(`antideleteroles_limit_${guildid}`);
+      let limitrooms = await keyValueService.get('protectDB', `antideleteroles_limit_${guildid}`);
       if (limit > limitrooms) {
         let member = guild.members.cache.find((m) => m.id == userid);
         try {
@@ -1090,7 +1089,7 @@ client27.on("ready", async () => {
 
 client27.on("roleDelete", async (role) => {
   let guildid = role.guild.id;
-  let status = protectDB.get(`antideleteroles_status_${guildid}`);
+  let status = await keyValueService.get('protectDB', `antideleteroles_status_${guildid}`);
   if (!status || status == "off") return;
   const fetchedLogs = await role.guild.fetchAuditLogs({
     limit: 1,
@@ -1099,27 +1098,27 @@ client27.on("roleDelete", async (role) => {
   const roleDeleteLog = fetchedLogs.entries.first();
   if (!roleDeleteLog) return;
   const { executor } = roleDeleteLog;
-  const users = protectDB.get(`rolesdelete_users_${guildid}`) || [];
+  const users = await keyValueService.get('protectDB', `rolesdelete_users_${guildid}`) || [];
   const endTime = moment().add(1, "day").format("YYYY-MM-DD");
   if (users.length <= 0) {
-    await protectDB.push(`rolesdelete_users_${guildid}`, { userid: executor.id, limit: 1, newReset: endTime });
+    await keyValueService.push('protectDB', `rolesdelete_users_${guildid}`, { userid: executor.id, limit: 1, newReset: endTime });
     return;
   }
   let executordb = users.find((user) => user.userid == executor.id);
   if (!executordb) {
-    await protectDB.push(`rolesdelete_users_${guildid}`, { userid: executor.id, limit: 1, newReset: endTime });
+    await keyValueService.push('protectDB', `rolesdelete_users_${guildid}`, { userid: executor.id, limit: 1, newReset: endTime });
     return;
   }
   let newexecutorlimit = executordb.limit + 1;
   executordb = { userid: executor.id, limit: newexecutorlimit, newReset: endTime };
   const index = users.findIndex((user) => user.userid === executor.id);
   users[index] = executordb;
-  let deletelimit = protectDB.get(`antideleteroles_limit_${guildid}`);
+  let deletelimit = await keyValueService.get('protectDB', `antideleteroles_limit_${guildid}`);
   if (newexecutorlimit > deletelimit) {
     let guild = client27.guilds.cache.find((gu) => gu.id == guildid);
     let member = guild.members.cache.find((ex) => ex.id == executor.id);
     try {
-      const logRoom = await protectDB.get(`protectLog_room_${member.guild.id}`);
+      const logRoom = await keyValueService.get('protectDB', `protectLog_room_${member.guild.id}`);
       if (logRoom) {
         const theLogRoom = await member.guild.channels.cache.find((ch) => ch.id == logRoom);
         theLogRoom.send({
@@ -1135,9 +1134,9 @@ client27.on("roleDelete", async (role) => {
       member.kick();
     } catch {}
     let filtered = users.filter((a) => a.userid != executor.id);
-    await protectDB.set(`rolesdelete_users_${guildid}`, filtered);
+    await keyValueService.set('protectDB', `rolesdelete_users_${guildid}`, filtered);
   } else {
-    await protectDB.set(`rolesdelete_users_${guildid}`, users);
+    await keyValueService.set('protectDB', `rolesdelete_users_${guildid}`, users);
   }
 });
 
@@ -1146,10 +1145,10 @@ client27.on("ready", async () => {
   const guild = client27.guilds.cache.first();
   if (!guild) return;
   const guildid = guild.id;
-  let status = protectDB.get(`ban_status_${guildid}`);
+  let status = await keyValueService.get('protectDB', `ban_status_${guildid}`);
   if (!status || status == "off") return;
-  setInterval(() => {
-    const users = protectDB.get(`ban_users_${guildid}`);
+  setInterval(async () => {
+    const users = await keyValueService.get('protectDB', `ban_users_${guildid}`);
     if (!Array.isArray(users) || users.length === 0) return;
     users.forEach(async (user) => {
       const { userid, limit, newReset } = user;
@@ -1159,9 +1158,9 @@ client27.on("ready", async () => {
         let executordb = { userid: userid, limit: 0, newReset: newResetDate };
         const index = users.findIndex((u) => u.userid === userid);
         users[index] = executordb;
-        await protectDB.set(`ban_users_${guildid}`, users);
+        await keyValueService.set('protectDB', `ban_users_${guildid}`, users);
       }
-      let limitrooms = protectDB.get(`ban_limit_${guildid}`);
+      let limitrooms = await keyValueService.get('protectDB', `ban_limit_${guildid}`);
       if (limit > limitrooms) {
         let member = guild.members.cache.find((m) => m.id == userid);
         try {
@@ -1175,7 +1174,7 @@ client27.on("ready", async () => {
 client27.on("guildBanAdd", async (ban) => {
   const { guild, user } = ban;
   let guildid = guild.id;
-  let status = protectDB.get(`ban_status_${guildid}`);
+  let status = await keyValueService.get('protectDB', `ban_status_${guildid}`);
   if (!status || status == "off") return;
   const fetchedLogs = await guild.fetchAuditLogs({
     limit: 1,
@@ -1184,27 +1183,27 @@ client27.on("guildBanAdd", async (ban) => {
   const banLog = fetchedLogs.entries.first();
   if (!banLog) return;
   const { executor } = banLog;
-  const users = protectDB.get(`ban_users_${guildid}`) || [];
+  const users = await keyValueService.get('protectDB', `ban_users_${guildid}`) || [];
   const endTime = moment().add(1, "day").format("YYYY-MM-DD");
   if (users.length <= 0) {
-    await protectDB.push(`ban_users_${guildid}`, { userid: executor.id, limit: 1, newReset: endTime });
+    await keyValueService.push('protectDB', `ban_users_${guildid}`, { userid: executor.id, limit: 1, newReset: endTime });
     return;
   }
   let executordb = users.find((u) => u.userid == executor.id);
   if (!executordb) {
-    await protectDB.push(`ban_users_${guildid}`, { userid: executor.id, limit: 1, newReset: endTime });
+    await keyValueService.push('protectDB', `ban_users_${guildid}`, { userid: executor.id, limit: 1, newReset: endTime });
     return;
   }
   let newexecutorlimit = executordb.limit + 1;
   executordb = { userid: executor.id, limit: newexecutorlimit, newReset: endTime };
   const index = users.findIndex((u) => u.userid === executor.id);
   users[index] = executordb;
-  let deletelimit = protectDB.get(`ban_limit_${guildid}`);
+  let deletelimit = await keyValueService.get('protectDB', `ban_limit_${guildid}`);
   if (newexecutorlimit > deletelimit) {
     let guildObj = client27.guilds.cache.find((gu) => gu.id == guildid);
     let member = guildObj.members.cache.find((ex) => ex.id == executor.id);
     try {
-      const logRoom = await protectDB.get(`protectLog_room_${member.guild.id}`);
+      const logRoom = await keyValueService.get('protectDB', `protectLog_room_${member.guild.id}`);
       if (logRoom) {
         const theLogRoom = await member.guild.channels.cache.find((ch) => ch.id == logRoom);
         theLogRoom.send({
@@ -1220,15 +1219,15 @@ client27.on("guildBanAdd", async (ban) => {
       member.kick();
     } catch {}
     let filtered = users.filter((a) => a.userid != executor.id);
-    await protectDB.set(`ban_users_${guildid}`, filtered);
+    await keyValueService.set('protectDB', `ban_users_${guildid}`, filtered);
   } else {
-    await protectDB.set(`ban_users_${guildid}`, users);
+    await keyValueService.set('protectDB', `ban_users_${guildid}`, users);
   }
 });
 
 client27.on("guildMemberRemove", async (member) => {
   let guildid = member.guild.id;
-  let status = protectDB.get(`ban_status_${guildid}`);
+  let status = await keyValueService.get('protectDB', `ban_status_${guildid}`);
   if (!status || status == "off") return;
   if (member.id === client27.user.id) return;
   const fetchedLogs = await member.guild.fetchAuditLogs({
@@ -1238,27 +1237,27 @@ client27.on("guildMemberRemove", async (member) => {
   const kickLog = fetchedLogs.entries.first();
   if (!kickLog) return; // not a kick
   const { executor } = kickLog;
-  const users = protectDB.get(`ban_users_${guildid}`) || [];
+  const users = await keyValueService.get('protectDB', `ban_users_${guildid}`) || [];
   const endTime = moment().add(1, "day").format("YYYY-MM-DD");
   if (users.length <= 0) {
-    await protectDB.push(`ban_users_${guildid}`, { userid: executor.id, limit: 1, newReset: endTime });
+    await keyValueService.push('protectDB', `ban_users_${guildid}`, { userid: executor.id, limit: 1, newReset: endTime });
     return;
   }
   let executordb = users.find((u) => u.userid == executor.id);
   if (!executordb) {
-    await protectDB.push(`ban_users_${guildid}`, { userid: executor.id, limit: 1, newReset: endTime });
+    await keyValueService.push('protectDB', `ban_users_${guildid}`, { userid: executor.id, limit: 1, newReset: endTime });
     return;
   }
   let newexecutorlimit = executordb.limit + 1;
   executordb = { userid: executor.id, limit: newexecutorlimit, newReset: endTime };
   const index = users.findIndex((u) => u.userid === executor.id);
   users[index] = executordb;
-  let deletelimit = protectDB.get(`ban_limit_${guildid}`);
+  let deletelimit = await keyValueService.get('protectDB', `ban_limit_${guildid}`);
   if (newexecutorlimit > deletelimit) {
     let guildObj = client27.guilds.cache.find((gu) => gu.id == guildid);
     let memberToKick = guildObj.members.cache.find((ex) => ex.id == executor.id);
     try {
-      const logRoom = await protectDB.get(`protectLog_room_${memberToKick.guild.id}`);
+      const logRoom = await keyValueService.get('protectDB', `protectLog_room_${memberToKick.guild.id}`);
       if (logRoom) {
         const theLogRoom = await memberToKick.guild.channels.cache.find((ch) => ch.id == logRoom);
         theLogRoom.send({
@@ -1274,17 +1273,17 @@ client27.on("guildMemberRemove", async (member) => {
       memberToKick.kick();
     } catch {}
     let filtered = users.filter((a) => a.userid != executor.id);
-    await protectDB.set(`ban_users_${guildid}`, filtered);
+    await keyValueService.set('protectDB', `ban_users_${guildid}`, filtered);
   } else {
-    await protectDB.set(`ban_users_${guildid}`, users);
+    await keyValueService.set('protectDB', `ban_users_${guildid}`, users);
   }
 });
 
 // ── Logs events ──
 client27.on("messageDelete", async (message) => {
   if (!message || !message.author || message.author.bot) return;
-  if (!logsDB.has(`log_messagedelete_${message.guild.id}`)) return;
-  let deletelog1 = logsDB.get(`log_messagedelete_${message.guild.id}`);
+  if (!await keyValueService.has('logsDB', `log_messagedelete_${message.guild.id}`)) return;
+  let deletelog1 = await keyValueService.get('logsDB', `log_messagedelete_${message.guild.id}`);
   let deletelog2 = message.guild.channels.cache.get(deletelog1);
   const fetchedLogs = await message.guild.fetchAuditLogs({
     limit: 1,
@@ -1307,12 +1306,12 @@ client27.on("messageDelete", async (message) => {
 
 client27.on("messageUpdate", async (oldMessage, newMessage) => {
   if (!oldMessage.author || oldMessage.author.bot) return;
-  if (!logsDB.has(`log_messageupdate_${oldMessage.guild.id}`)) return;
+  if (!await keyValueService.has('logsDB', `log_messageupdate_${oldMessage.guild.id}`)) return;
   const fetchedLogs = await oldMessage.guild.fetchAuditLogs({
     limit: 1,
     type: AuditLogEvent.MessageUpdate,
   });
-  let updateLog1 = logsDB.get(`log_messageupdate_${oldMessage.guild.id}`);
+  let updateLog1 = await keyValueService.get('logsDB', `log_messageupdate_${oldMessage.guild.id}`);
   let updateLog2 = oldMessage.guild.channels.cache.get(updateLog1);
   const updateLog = fetchedLogs.entries.first();
   if (!updateLog) return;
@@ -1330,8 +1329,8 @@ client27.on("messageUpdate", async (oldMessage, newMessage) => {
 });
 
 client27.on("roleCreate", async (role) => {
-  if (!logsDB.has(`log_rolecreate_${role.guild.id}`)) return;
-  let roleCreateLog1 = logsDB.get(`log_rolecreate_${role.guild.id}`);
+  if (!await keyValueService.has('logsDB', `log_rolecreate_${role.guild.id}`)) return;
+  let roleCreateLog1 = await keyValueService.get('logsDB', `log_rolecreate_${role.guild.id}`);
   let roleCreateLog2 = role.guild.channels.cache.get(roleCreateLog1);
   const fetchedLogs = await role.guild.fetchAuditLogs({ limit: 1, type: AuditLogEvent.RoleCreate });
   const roleCreateLog = fetchedLogs.entries.first();
@@ -1348,8 +1347,8 @@ client27.on("roleCreate", async (role) => {
 });
 
 client27.on("roleDelete", async (role) => {
-  if (!logsDB.has(`log_roledelete_${role.guild.id}`)) return;
-  let roleDeleteLog1 = logsDB.get(`log_roledelete_${role.guild.id}`);
+  if (!await keyValueService.has('logsDB', `log_roledelete_${role.guild.id}`)) return;
+  let roleDeleteLog1 = await keyValueService.get('logsDB', `log_roledelete_${role.guild.id}`);
   let roleDeleteLog2 = role.guild.channels.cache.get(roleDeleteLog1);
   const fetchedLogs = await role.guild.fetchAuditLogs({ limit: 1, type: AuditLogEvent.RoleDelete });
   const roleDeleteLog = fetchedLogs.entries.first();
@@ -1366,8 +1365,8 @@ client27.on("roleDelete", async (role) => {
 });
 
 client27.on("channelCreate", async (channel) => {
-  if (!logsDB.has(`log_channelcreate_${channel.guild.id}`)) return;
-  let channelCreateLog1 = logsDB.get(`log_channelcreate_${channel.guild.id}`);
+  if (!await keyValueService.has('logsDB', `log_channelcreate_${channel.guild.id}`)) return;
+  let channelCreateLog1 = await keyValueService.get('logsDB', `log_channelcreate_${channel.guild.id}`);
   let channelCreateLog2 = channel.guild.channels.cache.get(channelCreateLog1);
   const fetchedLogs = await channel.guild.fetchAuditLogs({ limit: 1, type: AuditLogEvent.ChannelCreate });
   const channelCreateLog = fetchedLogs.entries.first();
@@ -1386,8 +1385,8 @@ client27.on("channelCreate", async (channel) => {
 });
 
 client27.on("channelDelete", async (channel) => {
-  if (!logsDB.has(`log_channeldelete_${channel.guild.id}`)) return;
-  let channelDeleteLog1 = logsDB.get(`log_channeldelete_${channel.guild.id}`);
+  if (!await keyValueService.has('logsDB', `log_channeldelete_${channel.guild.id}`)) return;
+  let channelDeleteLog1 = await keyValueService.get('logsDB', `log_channeldelete_${channel.guild.id}`);
   let channelDeleteLog2 = channel.guild.channels.cache.get(channelDeleteLog1);
   const fetchedLogs = await channel.guild.fetchAuditLogs({ limit: 1, type: AuditLogEvent.ChannelDelete });
   const channelDeleteLog = fetchedLogs.entries.first();
@@ -1408,8 +1407,8 @@ client27.on("guildMemberUpdate", async (oldMember, newMember) => {
   const addedRoles = newMember.roles.cache.filter((role) => !oldMember.roles.cache.has(role.id));
   const removedRoles = oldMember.roles.cache.filter((role) => !newMember.roles.cache.has(role.id));
 
-  if (addedRoles.size > 0 && logsDB.has(`log_rolegive_${guild.id}`)) {
-    let roleGiveLog1 = logsDB.get(`log_rolegive_${guild.id}`);
+  if (addedRoles.size > 0 && await keyValueService.has('logsDB', `log_rolegive_${guild.id}`)) {
+    let roleGiveLog1 = await keyValueService.get('logsDB', `log_rolegive_${guild.id}`);
     let roleGiveLog2 = guild.channels.cache.get(roleGiveLog1);
     const fetchedLogs = await guild.fetchAuditLogs({ limit: addedRoles.size, type: AuditLogEvent.MemberRoleUpdate });
     addedRoles.forEach((role) => {
@@ -1430,8 +1429,8 @@ client27.on("guildMemberUpdate", async (oldMember, newMember) => {
     });
   }
 
-  if (removedRoles.size > 0 && logsDB.has(`log_roleremove_${guild.id}`)) {
-    let roleRemoveLog1 = logsDB.get(`log_roleremove_${guild.id}`);
+  if (removedRoles.size > 0 && await keyValueService.has('logsDB', `log_roleremove_${guild.id}`)) {
+    let roleRemoveLog1 = await keyValueService.get('logsDB', `log_roleremove_${guild.id}`);
     let roleRemoveLog2 = guild.channels.cache.get(roleRemoveLog1);
     const fetchedLogs = await guild.fetchAuditLogs({ limit: removedRoles.size, type: AuditLogEvent.MemberRoleUpdate });
     removedRoles.forEach((role) => {
@@ -1461,7 +1460,7 @@ client27.on("guildMemberAdd", async (member) => {
   if (!botAddLog) return;
   const { executor } = botAddLog;
   if (member.user.bot) {
-    let botAddLog1 = logsDB.get(`log_botadd_${guild.id}`);
+    let botAddLog1 = await keyValueService.get('logsDB', `log_botadd_${guild.id}`);
     if (!botAddLog1) return;
     let botAddLog2 = guild.channels.cache.get(botAddLog1);
     let botAddEmbed = new EmbedBuilder()
@@ -1479,8 +1478,8 @@ client27.on("guildMemberAdd", async (member) => {
 
 client27.on("guildBanAdd", async (ban) => {
   const { guild, user } = ban;
-  if (!logsDB.has(`log_banadd_${guild.id}`)) return;
-  let banAddLog1 = logsDB.get(`log_banadd_${guild.id}`);
+  if (!await keyValueService.has('logsDB', `log_banadd_${guild.id}`)) return;
+  let banAddLog1 = await keyValueService.get('logsDB', `log_banadd_${guild.id}`);
   let banAddLog2 = guild.channels.cache.get(banAddLog1);
   const fetchedLogs = await guild.fetchAuditLogs({ limit: 1, type: AuditLogEvent.MemberBanAdd });
   const banAddLog = fetchedLogs.entries.first();
@@ -1498,8 +1497,8 @@ client27.on("guildBanAdd", async (ban) => {
 
 client27.on("guildBanRemove", async (ban) => {
   const { guild, user } = ban;
-  if (!logsDB.has(`log_bandelete_${guild.id}`)) return;
-  let banRemoveLog1 = logsDB.get(`log_bandelete_${guild.id}`);
+  if (!await keyValueService.has('logsDB', `log_bandelete_${guild.id}`)) return;
+  let banRemoveLog1 = await keyValueService.get('logsDB', `log_bandelete_${guild.id}`);
   let banRemoveLog2 = guild.channels.cache.get(banRemoveLog1);
   const fetchedLogs = await guild.fetchAuditLogs({ limit: 1, type: AuditLogEvent.MemberBanRemove });
   const banRemoveLog = fetchedLogs.entries.first();
@@ -1517,8 +1516,8 @@ client27.on("guildBanRemove", async (ban) => {
 
 client27.on("guildMemberRemove", async (member) => {
   const guild = member.guild;
-  if (!logsDB.has(`log_kickadd_${guild.id}`)) return;
-  const kickLogChannelId = logsDB.get(`log_kickadd_${guild.id}`);
+  if (!await keyValueService.has('logsDB', `log_kickadd_${guild.id}`)) return;
+  const kickLogChannelId = await keyValueService.get('logsDB', `log_kickadd_${guild.id}`);
   const kickLogChannel = guild.channels.cache.get(kickLogChannelId);
   const fetchedLogs = await guild.fetchAuditLogs({ limit: 1, type: AuditLogEvent.MemberKick });
   const kickLog = fetchedLogs.entries.first();
@@ -1552,9 +1551,9 @@ client27.on("inviteDelete", async (invite) => {
 
 client27.on("guildMemberAdd", async (member) => {
   try {
-    const welcomeChannelId = await systemDB.get(`welcome_channel_${member.guild.id}`);
-    const welcomeRoleId = await systemDB.get(`welcome_role_${member.guild.id}`);
-    const welcomeImage = await systemDB.get(`welcome_image_${member.guild.id}`);
+    const welcomeChannelId = await keyValueService.get('systemDB', `welcome_channel_${member.guild.id}`);
+    const welcomeRoleId = await keyValueService.get('systemDB', `welcome_role_${member.guild.id}`);
+    const welcomeImage = await keyValueService.get('systemDB', `welcome_image_${member.guild.id}`);
 
     if (welcomeRoleId) {
       const role = member.guild.roles.cache.get(welcomeRoleId);
@@ -1602,8 +1601,8 @@ client27.on("guildMemberAdd", async (member) => {
 // ── Nadeko system ──
 client27.on("guildMemberAdd", async (member) => {
   const theeGuild = member.guild;
-  let rooms = nadekoDB.get(`rooms_${theeGuild.id}`);
-  const message = nadekoDB.get(`message_${theeGuild.id}`);
+  let rooms = await keyValueService.get('nadekoDB', `rooms_${theeGuild.id}`);
+  const message = await keyValueService.get('nadekoDB', `message_${theeGuild.id}`);
   if (!rooms || rooms.length <= 0 || !message) return;
   rooms.forEach(async (room) => {
     const theRoom = await theeGuild.channels.cache.find((ch) => ch.id == room);
@@ -1619,7 +1618,7 @@ client27.on("guildMemberAdd", async (member) => {
 // ── Auto reply ──
 client27.on("messageCreate", async (message) => {
   if (message.author.bot) return;
-  const autoReplys = CookiesDB.get(`replys_${message.guild.id}`);
+  const autoReplys = await keyValueService.get('CookiesDB', `replys_${message.guild.id}`);
   if (!autoReplys) return;
   const data = autoReplys.find((r) => r.word == message.content);
   if (!data) return;

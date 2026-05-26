@@ -1,6 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { Database } = require('st.db');
-const autolineDB = new Database("/Json-db/Bots/autolineDB.json");
+const keyValueService = require("../../services/keyValueService");
 
 module.exports = {
     adminsOnly: true,
@@ -17,7 +16,7 @@ module.exports = {
             )),
     async execute(interaction) {
         const mode = interaction.options.getString('mode');
-        await autolineDB.set(`line_mode_${interaction.guild.id}`, mode);
+        await keyValueService.set('autolineDB', `line_mode_${interaction.guild.id}`, mode);
         await interaction.reply({ content: `تم ضبط وضع الإرسال إلى ${mode}`, ephemeral: true });
     },
 };

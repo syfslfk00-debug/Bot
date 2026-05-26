@@ -1,5 +1,5 @@
-const { Database } = require("st.db");
-const db = new Database('/Json-db/Bots/ticketDB');
+const keyValueService = require("../services/keyValueService");
+
 const { 
     StringSelectMenuOptionBuilder,
     StringSelectMenuBuilder,
@@ -25,7 +25,7 @@ module.exports = (client27) => {
         if (customId === 'reset') {
             return; 
         }
-            const data = db.get(`Ticket_${interaction.channel.id}_${customId}`);
+            const data = await keyValueService.get('ticketDB', `Ticket_${interaction.channel.id}_${customId}`);
             if (!data) return interaction.reply({ content: `Please Setup Again`, ephemeral: true });
 
             if (data.Ask === 'on') {
@@ -49,7 +49,7 @@ module.exports = (client27) => {
 
         if (interaction.isModalSubmit() && interaction.customId.endsWith('_modal')) {
             const buttonCustomId = interaction.customId.replace('_modal', '');
-            const data = db.get(`Ticket_${interaction.channel.id}_${buttonCustomId}`);
+            const data = await keyValueService.get('ticketDB', `Ticket_${interaction.channel.id}_${buttonCustomId}`);
             if (!data) return interaction.reply({ content: `Please Setup Again`, ephemeral: true });
             
             const ticketReason = interaction.fields.getTextInputValue('ticket_reason');
@@ -80,7 +80,7 @@ async function createTicketChannel(interaction, data, ticketReason = null) {
         ],
     });
 
-    db.set(`TICKET-PANEL_${channel.id}`, { author: interaction.user.id, Support: data.Support });
+    await keyValueService.set('ticketDB', `TICKET-PANEL_${channel.id}`, { author: interaction.user.id, Support: data.Support });
     interaction.reply({ content: `${channel} has been created :white_check_mark:`, ephemeral: true });
 
     const embed = new EmbedBuilder()

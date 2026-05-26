@@ -1,3 +1,4 @@
+const keyValueService = require("../../services/keyValueService");
 const {
   SlashCommandBuilder,
   EmbedBuilder,
@@ -7,8 +8,6 @@ const {
   TextInputBuilder,
   TextInputStyle,
 } = require("discord.js");
-const { Database } = require("st.db");
-const applyDB = new Database("/Json-db/Bots/applyDB.json");
 
 module.exports = {
   ownersOnly: false,
@@ -48,7 +47,7 @@ module.exports = {
       ).setRequired(false)
     ),
   async execute(interaction, client) {
-    const settings = await applyDB.get(
+    const settings = await keyValueService.get('applyDB', 
       `apply_settings_${interaction.guild.id}`
     );
     if (!settings) {
@@ -67,7 +66,7 @@ module.exports = {
     let image = interaction.options.getAttachment(`image`);
     let button = interaction.options.getString(`button`) || "1";
 
-    await applyDB.set(`apply_${interaction.guild.id}`, {
+    await keyValueService.set('applyDB', `apply_${interaction.guild.id}`, {
       roleid: role.id,
       ask1: ask1,
       ask2: ask2,

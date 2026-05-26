@@ -1,6 +1,5 @@
 const { SlashCommandBuilder, Events, Client, ActivityType, ModalBuilder, TextInputStyle, EmbedBuilder, PermissionsBitField, ButtonStyle, TextInputBuilder, ActionRowBuilder, ButtonBuilder, MessageComponentCollector } = require("discord.js");
-const { Database } = require("st.db");
-const db = new Database("/Json-db/Bots/BroadcastDB")
+const keyValueService = require("../services/keyValueService");
 
 module.exports = (client27) => {
     client27.on(Events.InteractionCreate, async (interaction) => {
@@ -30,9 +29,9 @@ module.exports = (client27) => {
             if (interaction.customId === 'send_online' || interaction.customId === 'send_offline' || interaction.customId === 'send_all') {
                 await interaction.deferReply({ ephemeral: false });
 
-                const thetokens = db.get(`tokens_${interaction.guild.id}`);
+                const thetokens = await keyValueService.get('BroadcastDB', `tokens_${interaction.guild.id}`);
                 if (!thetokens || thetokens.length <= 0) return interaction.editReply({ content: `**لم يتم اضافة اي توكن لبوتات البرودكاست**`, ephemeral: true });
-                const broadcast_msg = db.get(`broadcast_msg_${interaction.guild.id}`);
+                const broadcast_msg = await keyValueService.get('BroadcastDB', `broadcast_msg_${interaction.guild.id}`);
                 if (!broadcast_msg) return interaction.reply({ content: `**لم يتم تحديد رسالة البرودكاست**`, ephemeral: true });
 
                 await interaction.guild.members.fetch();
