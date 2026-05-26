@@ -30,14 +30,19 @@ module.exports = (client) => {
         "ticketDB",
         `Ticket_${interaction.channel.id}_${customId}`
       );
-      if (!data)
-        return interaction.reply({
+      if (!data) {
+        // تأخير الرد لمنع انتهاء المهلة
+        await interaction.deferReply({ ephemeral: true });
+        return interaction.editReply({
           content: "❌ بيانات التذكرة غير موجودة. أعد إعداد النظام.",
           ephemeral: true,
         });
+      }
 
       // إذا كان سؤال السبب مفعّلاً، نرسل نافذة
       if (data.Ask === "on" || data.Ask === true) {
+        // نستخدم deferUpdate لأن showModal لا يعمل مع deferReply
+        await interaction.deferUpdate();
         const modal = new ModalBuilder()
           .setCustomId(customId + "_modal")
           .setTitle("سبب فتح التذكرة")
@@ -52,7 +57,8 @@ module.exports = (client) => {
           );
         await interaction.showModal(modal);
       } else {
-        // إنشاء التذكرة مباشرة
+        // إنشاء التذكرة مباشرة – نؤخر الرد أولاً
+        await interaction.deferReply({ ephemeral: true });
         await createTicketChannel(interaction, data);
       }
       return;
@@ -68,14 +74,18 @@ module.exports = (client) => {
         "ticketDB",
         `Ticket_${interaction.channel.id}_${buttonCustomId}`
       );
-      if (!data)
-        return interaction.reply({
+      if (!data) {
+        await interaction.deferReply({ ephemeral: true });
+        return interaction.editReply({
           content: "❌ بيانات التذكرة غير موجودة.",
           ephemeral: true,
         });
+      }
 
       const ticketReason =
         interaction.fields.getTextInputValue("ticket_reason");
+      // تأخير الرد قبل إنشاء التذكرة لأن showModal استهلك التفاعل بالفعل، نحتاج deferReply
+      await interaction.deferReply({ ephemeral: true });
       await createTicketChannel(interaction, data, ticketReason);
       return;
     }
@@ -119,8 +129,8 @@ async function createTicketChannel(interaction, data, ticketReason = null) {
     Support: data.Support,
   });
 
-  // رد مخفي بأن التذكرة فُتحت
-  await interaction.reply({
+  // رد مخفي بأن التذكرة فُتحت (باستخدام editReply لأننا استخدمنا deferReply)
+  await interaction.editReply({
     content: `✅ تم إنشاء تذكرتك: ${channel}`,
     ephemeral: true,
   });
