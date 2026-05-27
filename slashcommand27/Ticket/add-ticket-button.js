@@ -81,54 +81,10 @@ module.exports = {
       });
     }
 
-    // ---- الخطوة الأولى: طلب messageId عبر مودال ----
-    const idModal = new ModalBuilder()
-      .setCustomId("modal_get_message_id")
-      .setTitle("إضافة زر تذكرة");
-
-    idModal.addComponents(
-      new ActionRowBuilder().addComponents(
-        new TextInputBuilder()
-          .setCustomId("message_id")
-          .setLabel("معرف الرسالة (Message ID)")
-          .setStyle(TextInputStyle.Short)
-          .setPlaceholder("أدخل معرف الرسالة الموجودة في هذه القناة")
-          .setRequired(true)
-      )
-    );
-
-    await interaction.showModal(idModal);
-
-    let targetMessageId;
-    try {
-      const modalSubmit = await interaction.awaitModalSubmit({
-        time: 120_000,
-        filter: (i) => i.user.id === interaction.user.id,
-      });
-      targetMessageId = modalSubmit.fields.getTextInputValue("message_id").trim();
-      await modalSubmit.deferUpdate();
-    } catch {
-      return interaction.editReply({
-        content: "⏰ انتهت المهلة أو أُلغيت العملية.",
-        flags: MessageFlags.Ephemeral,
-      }).catch(() => {});
-    }
-
-    // محاولة جلب الرسالة للتأكد من صحتها
-    let targetMessage;
-    try {
-      targetMessage = await interaction.channel.messages.fetch(targetMessageId);
-    } catch {
-      return interaction.editReply({
-        content: "❌ تعذر العثور على الرسالة في هذه القناة. تأكد من المعرف.",
-        flags: MessageFlags.Ephemeral,
-      }).catch(() => {});
-    }
-
-    // ---- الإعدادات الافتراضية المشابهة لـ setup-ticket ----
     const welcomeTemplates = (await keyValueService.get("welcomeTemplates", interaction.guild.id)) || {};
 
     const settings = {
+      targetMessageId: null,
       buttonName: "فتح تذكرة",
       buttonStyle: "Primary",
       buttonEmoji: "",
@@ -139,12 +95,12 @@ module.exports = {
       askReason: false,
     };
 
-    // إنشاء معاينة مباشرة (تعرض ملخص الإعدادات الحالية)
     const generatePreviewEmbed = () =>
       new EmbedBuilder()
         .setColor("#5865F2")
         .setTitle("إعدادات زر التذكرة")
         .addFields(
+          { name: "📨 الرسالة المستهدفة", value: settings.targetMessageId ? `\`${settings.targetMessageId}\`` : "❌ غير محددة", inline: false },
           { name: "✏️ اسم الزر", value: settings.buttonName || "غير محدد", inline: true },
           { name: "🎨 لون الزر", value: settings.buttonStyle, inline: true },
           { name: "😀 إيموجي", value: settings.buttonEmoji || "لا يوجد", inline: true },
@@ -159,15 +115,17 @@ module.exports = {
 
     const mainButtons = () =>
       new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId("edit_basics").setLabel("⚙️ الإعدادات الأساسية").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("edit_message").setLabel("📨 تحديد الرسالة").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("edit_basics").setLabel("⚙️ الإعدادات الأساسية").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("edit_advanced").setLabel("✨ خيارات التذكرة").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("send_panel").setLabel("🚀 تأكيد وإضافة").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("cancel_setup").setLabel("❌ إلغاء").setStyle(ButtonStyle.Danger)
       );
 
-    await interaction.editReply({
+    await interaction.reply({
       embeds: [generatePreviewEmbed()],
       components: [mainButtons()],
+      fetchReply: true,
     });
 
     const paginationCache = {
@@ -185,7 +143,6 @@ module.exports = {
       );
     }
 
-    // ---- حلقة التفاعل الرئيسية (نفس نمط setup-ticket) ----
     while (true) {
       try {
         const filter = (i) => i.user.id === interaction.user.id;
@@ -205,22 +162,49 @@ module.exports = {
                 embeds: [new EmbedBuilder().setColor("#FF0000").setDescription("❌ تم إلغاء العملية.")],
               });
 
+            case "edit_message": {
+              const modal = new ModalBuilder()
+                .setCustomId("modal_message_id")
+                .setTitle("تحديد الرسالة المستهدفة");
+              modal.addComponents(
+                new ActionRowBuilder().addComponents(
+                  new TextInputBuilder()
+                    .setCustomId("input")
+                    .setLabel("معرف الرسالة (Message ID)")
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder("أدخل معرف الرسالة الموجودة في هذه القناة")
+                    .setRequired(true)
+                    .setValue(settings.targetMessageId || "")
+                )
+              );
+              await componentInteraction.showModal(modal);
+              continue;
+            }
+
             case "send_panel": {
               const missing = [];
+              if (!settings.targetMessageId) missing.push("الرسالة المستهدفة");
               if (!settings.supportRoleId) missing.push("رتبة الدعم");
               if (!settings.categoryId) missing.push("فئة القنوات");
 
               if (missing.length > 0) {
                 await componentInteraction.deferUpdate();
-                const msg = missing.length === 2
-                  ? `⚠️ يجب اختيار ${missing.join(" و ")} قبل الإضافة.`
-                  : `⚠️ يجب اختيار ${missing[0]} قبل الإضافة.`;
+                const msg = `⚠️ يجب اختيار ${missing.join(" و ")} قبل الإضافة.`;
                 await componentInteraction.followUp({ content: msg, flags: MessageFlags.Ephemeral });
                 continue;
               }
 
+              // التحقق من وجود الرسالة قبل المتابعة
+              try {
+                await interaction.channel.messages.fetch(settings.targetMessageId);
+              } catch {
+                await componentInteraction.deferUpdate();
+                await componentInteraction.followUp({ content: "❌ تعذر العثور على الرسالة المحددة. تأكد من المعرف.", flags: MessageFlags.Ephemeral });
+                continue;
+              }
+
               await componentInteraction.deferUpdate();
-              break; // الخروج من الحلقة لإتمام الإضافة
+              break;
             }
 
             case "edit_basics": {
@@ -317,15 +301,13 @@ module.exports = {
             }
           }
 
-          if (btnId === "send_panel") break; // الخروج بعد التأكيد
+          if (btnId === "send_panel") break;
         }
 
-        // ---- القوائم المنسدلة ----
         if (componentInteraction.isStringSelectMenu()) {
           const value = componentInteraction.values[0];
           const customId = componentInteraction.customId;
 
-          // ---- اختيار قالب ترحيب أو تخصيص يدوي (نفس فكرة setup-ticket) ----
           if (customId === "select_welcome") {
             if (value === "__custom__") {
               const modal = new ModalBuilder()
@@ -351,7 +333,6 @@ module.exports = {
             }
           }
 
-          // خيارات تحتاج Modal لتعديل النص
           const needsModal = ["buttonName", "buttonEmoji"];
           if (needsModal.includes(value)) {
             let modal;
@@ -391,7 +372,6 @@ module.exports = {
             continue;
           }
 
-          // معالجة اختيار welcomeMessage من القائمة
           if (value === "welcomeMessage") {
             const templateNames = Object.keys(welcomeTemplates);
             const options = [];
@@ -413,7 +393,6 @@ module.exports = {
             continue;
           }
 
-          // خيارات مباشرة (تحديث الإعدادات)
           await componentInteraction.deferUpdate();
 
           switch (customId) {
@@ -494,8 +473,19 @@ module.exports = {
           continue;
         }
 
-        // ---- Modal البحث أو الترحيب اليدوي ----
-        if (componentInteraction.type === 5) { // Modal Submit
+        if (componentInteraction.type === 5) {
+          if (componentInteraction.customId === "modal_message_id") {
+            const input = componentInteraction.fields.getTextInputValue("input").trim();
+            try {
+              await interaction.channel.messages.fetch(input);
+              settings.targetMessageId = input;
+              await componentInteraction.update({ embeds: [generatePreviewEmbed()], components: [mainButtons()] });
+            } catch {
+              await componentInteraction.reply({ content: "❌ لم يتم العثور على رسالة بهذا المعرف في هذه القناة.", flags: MessageFlags.Ephemeral });
+            }
+            continue;
+          }
+
           if (componentInteraction.customId === "modal_welcome") {
             const input = componentInteraction.fields.getTextInputValue("input");
             settings.welcomeMessage = input;
@@ -549,7 +539,6 @@ module.exports = {
       }
     }
 
-    // ---- تنفيذ إضافة الزر إلى الرسالة المستهدفة ----
     const randomId = `ticket_${Math.random().toString(36).substr(2, 9)}`;
     const newButton = new ButtonBuilder()
       .setCustomId(randomId)
@@ -557,10 +546,9 @@ module.exports = {
       .setStyle(ButtonStyle[settings.buttonStyle]);
     if (settings.buttonEmoji) newButton.setEmoji(settings.buttonEmoji);
 
-    // نجلب الرسالة مرة أخرى ونتأكد من مكوناتها الحالية
     let finalMessage;
     try {
-      finalMessage = await interaction.channel.messages.fetch(targetMessageId);
+      finalMessage = await interaction.channel.messages.fetch(settings.targetMessageId);
     } catch {
       return interaction.editReply({
         components: [],
@@ -569,15 +557,12 @@ module.exports = {
     }
 
     const existingComponents = finalMessage.components || [];
-    // نضيف الزر في صف جديد أو نضيفه للصف الأول إذا كان موجوداً
     const rows = existingComponents.length > 0 ? [...existingComponents] : [];
-    // إنشاء صف جديد للزر
     const buttonRow = new ActionRowBuilder().addComponents(newButton);
     rows.push(buttonRow);
 
     await finalMessage.edit({ components: rows });
 
-    // حفظ البيانات
     await keyValueService.set("ticketDB", `Ticket_${interaction.channel.id}_${randomId}`, {
       Support: settings.supportRoleId,
       Category: settings.categoryId,
@@ -586,7 +571,6 @@ module.exports = {
       Ask: settings.askReason ? "on" : "off",
     });
 
-    // عرض نجاح
     await interaction.editReply({
       components: [],
       embeds: [new EmbedBuilder().setColor("#00FF00").setDescription("✅ تم إضافة زر التذكرة بنجاح إلى الرسالة المحددة.")],
