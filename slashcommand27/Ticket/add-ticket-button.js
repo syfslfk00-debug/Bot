@@ -178,6 +178,17 @@ module.exports = {
                 )
               );
               await componentInteraction.showModal(modal);
+              try {
+                const modalSubmit = await componentInteraction.awaitModalSubmit({ time: 120_000, filter });
+                const input = modalSubmit.fields.getTextInputValue("input").trim();
+                try {
+                  await interaction.channel.messages.fetch(input);
+                  settings.targetMessageId = input;
+                  await modalSubmit.update({ embeds: [generatePreviewEmbed()], components: [mainButtons()] });
+                } catch {
+                  await modalSubmit.reply({ content: "❌ لم يتم العثور على رسالة بهذا المعرف في هذه القناة.", flags: MessageFlags.Ephemeral });
+                }
+              } catch {}
               continue;
             }
 
@@ -194,7 +205,6 @@ module.exports = {
                 continue;
               }
 
-              // التحقق من وجود الرسالة قبل المتابعة
               try {
                 await interaction.channel.messages.fetch(settings.targetMessageId);
               } catch {
@@ -474,18 +484,6 @@ module.exports = {
         }
 
         if (componentInteraction.type === 5) {
-          if (componentInteraction.customId === "modal_message_id") {
-            const input = componentInteraction.fields.getTextInputValue("input").trim();
-            try {
-              await interaction.channel.messages.fetch(input);
-              settings.targetMessageId = input;
-              await componentInteraction.update({ embeds: [generatePreviewEmbed()], components: [mainButtons()] });
-            } catch {
-              await componentInteraction.reply({ content: "❌ لم يتم العثور على رسالة بهذا المعرف في هذه القناة.", flags: MessageFlags.Ephemeral });
-            }
-            continue;
-          }
-
           if (componentInteraction.customId === "modal_welcome") {
             const input = componentInteraction.fields.getTextInputValue("input");
             settings.welcomeMessage = input;
