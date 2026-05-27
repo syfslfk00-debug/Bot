@@ -196,6 +196,7 @@ module.exports = {
                 new StringSelectMenuOptionBuilder()
                     .setLabel('إعادة تعيين')  // تم تعريبها
                     .setValue('reset')
+                    .setEmoji('🔄')  // تم إضافة إيموجي مناسب
             );
 
             // صف السلكت منيو
