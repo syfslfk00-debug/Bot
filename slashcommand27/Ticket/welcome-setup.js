@@ -103,10 +103,10 @@ module.exports = {
           .setStyle(ButtonStyle.Danger)
       );
 
+    // التعديل الوحيد: إزالة fetchReply: true من الرد الأولي
     await interaction.reply({
       embeds: [generatePreviewEmbed()],
       components: [mainButtons(), actionRow()],
-      fetchReply: true,
     });
 
     const filter = (i) => i.user.id === interaction.user.id;
