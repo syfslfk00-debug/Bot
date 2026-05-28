@@ -3,9 +3,6 @@ const keyValueService = require("../services/keyValueService");
 const ACTIVITY_NAMESPACE = "activityDB";
 const activeVoiceSessions = new Map();
 
-// الفترات الزمنية المعتمدة
-const TIMEFRAMES = ["alltime", "daily", "weekly", "monthly"];
-
 function voiceSessionKey(guildId, userId) {
   return `${guildId}:${userId}`;
 }
@@ -14,14 +11,12 @@ function normalizeScores(scores) {
   return scores && typeof scores === "object" && !Array.isArray(scores) ? scores : {};
 }
 
-// جلب نقاط الكتابي لفترة معينة (الافتراضي: الشامل)
-async function getTextScores(guildId, timeframe = "alltime") {
-  return normalizeScores(await keyValueService.get(ACTIVITY_NAMESPACE, `text_${guildId}_${timeframe}`));
+async function getTextScores(guildId) {
+  return normalizeScores(await keyValueService.get(ACTIVITY_NAMESPACE, `text_${guildId}`));
 }
 
-// جلب نقاط الصوتي لفترة معينة مع إضافة الجلسات النشطة حالياً للحساب الفوري
-async function getVoiceScores(guildId, timeframe = "alltime", includeActive = true) {
-  const scores = normalizeScores(await keyValueService.get(ACTIVITY_NAMESPACE, `voice_${guildId}_${timeframe}`));
+async function getVoiceScores(guildId, includeActive = true) {
+  const scores = normalizeScores(await keyValueService.get(ACTIVITY_NAMESPACE, `voice_${guildId}`));
   if (includeActive) {
     const now = Date.now();
     for (const [key, session] of activeVoiceSessions.entries()) {
@@ -33,24 +28,20 @@ async function getVoiceScores(guildId, timeframe = "alltime", includeActive = tr
   return scores;
 }
 
-// زيادة نقاط الكتابي في كل الفترات الزمنية بالتزامن
 async function incrementTextActivity(guildId, userId, amount = 1) {
-  for (const tf of TIMEFRAMES) {
-    const scores = normalizeScores(await keyValueService.get(ACTIVITY_NAMESPACE, `text_${guildId}_${tf}`));
-    scores[userId] = Number(scores[userId] || 0) + amount;
-    await keyValueService.set(ACTIVITY_NAMESPACE, `text_${guildId}_${tf}`, scores);
-  }
+  const scores = await getTextScores(guildId);
+  scores[userId] = Number(scores[userId] || 0) + amount;
+  await keyValueService.set(ACTIVITY_NAMESPACE, `text_${guildId}`, scores);
+  return scores[userId];
 }
 
-// زيادة نقاط الصوتي في كل الفترات الزمنية بالتزامن
 async function addVoiceActivity(guildId, userId, durationMs) {
   const safeDuration = Math.max(0, Number(durationMs) || 0);
-  if (!safeDuration) return;
-  for (const tf of TIMEFRAMES) {
-    const scores = normalizeScores(await keyValueService.get(ACTIVITY_NAMESPACE, `voice_${guildId}_${tf}`));
-    scores[userId] = Number(scores[userId] || 0) + safeDuration;
-    await keyValueService.set(ACTIVITY_NAMESPACE, `voice_${guildId}_${tf}`, scores);
-  }
+  if (!safeDuration) return 0;
+  const scores = normalizeScores(await keyValueService.get(ACTIVITY_NAMESPACE, `voice_${guildId}`));
+  scores[userId] = Number(scores[userId] || 0) + safeDuration;
+  await keyValueService.set(ACTIVITY_NAMESPACE, `voice_${guildId}`, scores);
+  return scores[userId];
 }
 
 async function trackTextActivity(message) {
@@ -70,9 +61,9 @@ function startVoiceSession(guildId, userId) {
 async function endVoiceSession(guildId, userId) {
   const key = voiceSessionKey(guildId, userId);
   const session = activeVoiceSessions.get(key);
-  if (!session) return;
+  if (!session) return 0;
   activeVoiceSessions.delete(key);
-  await addVoiceActivity(guildId, userId, Date.now() - session.startedAt);
+  return addVoiceActivity(guildId, userId, Date.now() - session.startedAt);
 }
 
 async function handleVoiceStateActivity(oldState, newState) {
@@ -121,38 +112,6 @@ function getTopEntries(scores, limit) {
     .slice(0, limit);
 }
 
-// دالة لحساب ترتيب مستدعي الأمر ونقاطه
-function getUserRankAndScore(scores, userId) {
-  const sorted = Object.entries(normalizeScores(scores))
-    .map(([id, val]) => [id, Number(val) || 0])
-    .filter(([, val]) => val > 0)
-    .sort((a, b) => b[1] - a[1]);
-
-  const index = sorted.findIndex(([id]) => id === userId);
-  if (index === -1) return { rank: "?", score: 0 };
-  return { rank: index + 1, score: sorted[index][1] };
-}
-
-// دالة لحساب وقت التصفير القادم بالـ Unix Timestamp لديسكورد
-function getNextResetTimestamp(timeframe) {
-  const now = new Date();
-  if (timeframe === "daily") {
-    const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-    return Math.floor(next.getTime() / 1000);
-  }
-  if (timeframe === "weekly") {
-    const resultDate = new Date(now.getTime());
-    resultDate.setDate(now.getDate() + ((7 - now.getDay() + 1) % 7 || 7));
-    resultDate.setHours(0, 0, 0, 0);
-    return Math.floor(resultDate.getTime() / 1000);
-  }
-  if (timeframe === "monthly") {
-    const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    return Math.floor(next.getTime() / 1000);
-  }
-  return null;
-}
-
 function formatVoiceDuration(ms) {
   const totalSeconds = Math.floor(Math.max(0, Number(ms) || 0) / 1000);
   const days = Math.floor(totalSeconds / 86400);
@@ -173,7 +132,5 @@ module.exports = {
   getTextScores,
   getVoiceScores,
   getTopEntries,
-  getUserRankAndScore,
-  getNextResetTimestamp,
   formatVoiceDuration,
 };
