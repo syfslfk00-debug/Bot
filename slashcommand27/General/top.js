@@ -29,13 +29,12 @@ function getRankEmoji(index) {
 }
 
 function buildTextLeaderboard(entries) {
-    if (!entries.length) {
+    if (!Array.isArray(entries) || !entries.length) {
         return "```yaml\nلا توجد بيانات نشاط كتابي حتى الآن.\n```";
     }
 
     return entries.map(([userId, count], index) => {
         const emoji = getRankEmoji(index);
-
         return [
             `${emoji} ${index + 1}. <@${userId}>`,
             `┖ \`${formatNumber(count)}\` رسالة`
@@ -44,13 +43,12 @@ function buildTextLeaderboard(entries) {
 }
 
 function buildVoiceLeaderboard(entries) {
-    if (!entries.length) {
+    if (!Array.isArray(entries) || !entries.length) {
         return "```yaml\nلا توجد بيانات نشاط صوتي حتى الآن.\n```";
     }
 
     return entries.map(([userId, duration], index) => {
         const emoji = getRankEmoji(index);
-
         return [
             `${emoji} ${index + 1}. <@${userId}>`,
             `┖ \`${formatVoiceDuration(duration)}\``
@@ -59,11 +57,12 @@ function buildVoiceLeaderboard(entries) {
 }
 
 function getUserRank(data, userId) {
+    if (!data || typeof data !== "object") return null;
+
     const sorted = Object.entries(data)
         .sort((a, b) => b[1] - a[1]);
 
     const index = sorted.findIndex(([id]) => id === userId);
-
     if (index === -1) return null;
 
     return {
@@ -80,7 +79,6 @@ module.exports = {
         .setDescription("عرض قائمة التوب للنشاط الكتابي والصوتي"),
 
     async execute(interaction) {
-
         await interaction.deferReply();
 
         const guild = interaction.guild;
@@ -88,27 +86,27 @@ module.exports = {
         const textScores = await getTextScores(guild.id);
         const voiceScores = await getVoiceScores(guild.id);
 
-        const topText = getTopEntries(textScores, 10);
-        const topVoice = getTopEntries(voiceScores, 10);
+        const topText = getTopEntries(textScores, 10) || [];
+        const topVoice = getTopEntries(voiceScores, 10) || [];
 
         const textRank = getUserRank(textScores, interaction.user.id);
         const voiceRank = getUserRank(voiceScores, interaction.user.id);
 
-        const createEmbed = (type) => {
+        const guildIcon = guild.iconURL({ dynamic: true });
 
+        const createEmbed = (type) => {
             const isText = type === "text";
 
             const embed = new EmbedBuilder()
                 .setColor("#2B2D31")
                 .setAuthor({
                     name: `${guild.name} • نظام التوب`,
-                    iconURL: guild.iconURL({ dynamic: true })
+                    iconURL: guildIcon
                 })
-                .setThumbnail(guild.iconURL({ dynamic: true }))
+                .setThumbnail(guildIcon)
                 .setTimestamp();
 
             if (isText) {
-
                 embed
                     .setTitle("🏆 توب النشاط الكتابي")
                     .setDescription(buildTextLeaderboard(topText))
@@ -118,9 +116,7 @@ module.exports = {
                             ? `#${textRank.position} — \`${formatNumber(textRank.value)}\` رسالة`
                             : "ليس لديك نشاط كتابي بعد."
                     });
-
             } else {
-
                 embed
                     .setTitle("🎤 توب النشاط الصوتي")
                     .setDescription(buildVoiceLeaderboard(topVoice))
@@ -130,7 +126,6 @@ module.exports = {
                             ? `#${voiceRank.position} — \`${formatVoiceDuration(voiceRank.value)}\``
                             : "ليس لديك نشاط صوتي بعد."
                     });
-
             }
 
             embed.setFooter({
@@ -148,7 +143,6 @@ module.exports = {
                     .setLabel("التوب الكتابي")
                     .setEmoji("📝")
                     .setStyle(ButtonStyle.Primary),
-
                 new ButtonBuilder()
                     .setCustomId("top_voice")
                     .setLabel("التوب الصوتي")
@@ -163,11 +157,10 @@ module.exports = {
 
         const collector = message.createMessageComponentCollector({
             componentType: ComponentType.Button,
-            time: 120000
+            time: 120_000
         });
 
         collector.on("collect", async (btn) => {
-
             if (btn.user.id !== interaction.user.id) {
                 return btn.reply({
                     content: "لا يمكنك التحكم بهذه القائمة.",
@@ -176,27 +169,19 @@ module.exports = {
             }
 
             if (btn.customId === "top_text") {
-
                 await btn.update({
                     embeds: [createEmbed("text")],
                     components: [buttons]
                 });
-
-            }
-
-            if (btn.customId === "top_voice") {
-
+            } else if (btn.customId === "top_voice") {
                 await btn.update({
                     embeds: [createEmbed("voice")],
                     components: [buttons]
                 });
-
             }
-
         });
 
         collector.on("end", async () => {
-
             const disabledRow = new ActionRowBuilder()
                 .addComponents(
                     ButtonBuilder.from(buttons.components[0]).setDisabled(true),
@@ -207,7 +192,5 @@ module.exports = {
                 components: [disabledRow]
             }).catch(() => {});
         });
-
     }
 };
-`
