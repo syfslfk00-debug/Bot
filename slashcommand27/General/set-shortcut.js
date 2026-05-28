@@ -1,5 +1,4 @@
 const { SlashCommandBuilder } = require("discord.js");
-const keyValueService = require("../../services/keyValueService");
 const { getGuildShortcuts, saveGuildShortcuts } = require("../../utils/shortcutUtils");
 
 module.exports = {
@@ -77,7 +76,6 @@ module.exports = {
             if (subcommand === 'remove') {
                 delete shortcuts[command];
                 await saveGuildShortcuts(interaction.guild.id, shortcuts);
-                await keyValueService.delete('shortcutDB', `${command}_cmd_${interaction.guild.id}`);
                 return interaction.reply({ content: `✅ تم حذف اختصار الأمر \`/${command}\` بنجاح.`, ephemeral: true });
             }
 
@@ -86,7 +84,6 @@ module.exports = {
 
             shortcuts[command] = shortcut;
             await saveGuildShortcuts(interaction.guild.id, shortcuts);
-            await keyValueService.set('shortcutDB', `${command}_cmd_${interaction.guild.id}`, shortcut);
 
             return interaction.reply({ content: `**تم تحديد اختصار للأمر \`/${command}\` بنجاح: \`${shortcut}\`**`, ephemeral: true });
         } catch (error) {

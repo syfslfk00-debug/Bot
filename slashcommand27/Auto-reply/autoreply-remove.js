@@ -8,7 +8,7 @@ module.exports = {
         .setDescription('حذف رد تلقائي')
         .addStringOption(Option => Option
             .setName(`trigger`)
-            .setDescription(`Trigger الرد التلقائي`)
+            .setDescription(`كلمة الرد التلقائي`)
             .setRequired(true)),
     /**
      * @param {ChatInputCommandInteraction} interaction
@@ -25,7 +25,7 @@ module.exports = {
                 await saveGuildReplies(interaction.guild.id, filtered);
                 return interaction.editReply({ content: `**تم حذف الرد التلقائي \`${trigger}\`**` });
             }
-            return interaction.editReply({ content: `**لا يوجد رد بهذا الـ Trigger \`${trigger}\`**` });
+            return interaction.editReply({ content: `**لا يوجد رد بهذه الكلمة \`${trigger}\`**` });
         } catch (error) {
             console.error(error);
             return interaction.editReply({ content: `**لقد حدث خطأ، حاول مرة أخرى.**` });

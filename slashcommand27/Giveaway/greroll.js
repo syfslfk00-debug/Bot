@@ -40,7 +40,7 @@ if(entries.length > 0 && entries.length >= winners) {
       theWinners.push(winnerExcept);
     }
     
-    themsg.reply({content:`Congratulations ${theWinners}! You won the **${prize}**!`})
+    themsg.reply({content:`🎉 مبروك ${theWinners}! لقد فزت بـ **${prize}**!`})
   }else{
     themsg.reply({content:`**لا يوجد عدد من المشتركين كافي**`})
   }

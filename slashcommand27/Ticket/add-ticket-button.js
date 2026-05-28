@@ -76,7 +76,7 @@ module.exports = {
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
       return interaction.reply({
-        content: "❌ تحتاج إلى صلاحية `Administrator` لاستخدام هذا الأمر.",
+        content: "❌ تحتاج إلى صلاحية الإدارة لاستخدام هذا الأمر.",
         flags: MessageFlags.Ephemeral,
       });
     }
@@ -170,7 +170,7 @@ module.exports = {
                 new ActionRowBuilder().addComponents(
                   new TextInputBuilder()
                     .setCustomId("input")
-                    .setLabel("معرف الرسالة (Message ID)")
+                    .setLabel("معرف الرسالة")
                     .setStyle(TextInputStyle.Short)
                     .setPlaceholder("أدخل معرف الرسالة الموجودة في هذه القناة")
                     .setRequired(true)

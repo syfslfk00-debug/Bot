@@ -28,7 +28,7 @@ module.exports = {
 
             return interaction.reply({ content: '**تم تحديد الاعدادات بنجاح**' });
         } catch (error) {
-            console.error('Error setting feedback config:', error);
+            console.error('خطأ أثناء تحديد إعدادات التقييم:', error);
             return interaction.reply({ content: 'حدث خطأ أثناء تحديد الإعدادات.', ephemeral: true });
         }
     }

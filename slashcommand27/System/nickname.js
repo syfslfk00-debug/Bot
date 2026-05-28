@@ -33,19 +33,19 @@ module.exports ={
             await member.setNickname(nickname).then(() => {
                 return interaction.editReply({content:`**تم تعيين الاسم المستعار ل __${user.username}__**`})
             }).catch((error) => {
-                console.log(`🔴 | error in nickname command` , error)
+                console.log(`🔴 | خطأ في أمر nickname` , error)
                 return interaction.editReply({content: `**لا تمتلك صلاحية لفعل ذلك**` })
             })
         }else{
             await member.setNickname(` `).then(() => {
                 return interaction.editReply({content:`**تم اعادة الاسم المستعار ل __${user.username}__**`})
             }).catch((error) => {
-                console.log(`🔴 | error in nickname command` , error)
+                console.log(`🔴 | خطأ في أمر nickname` , error)
                 return interaction.editReply({content: `**لا تمتلك صلاحية لفعل ذلك**` })
             })
         }        
         } catch (error){
-            console.log(`🔴 | error in nickname command` , error)
+            console.log(`🔴 | خطأ في أمر nickname` , error)
             return interaction.editReply({content:`**لقد حدث خطا اتصل بالمطورين**`})
         }
     }

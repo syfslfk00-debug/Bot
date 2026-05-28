@@ -68,7 +68,7 @@ async function has(namespace, key) {
 
 async function push(namespace, key, value) {
   const current = (await get(namespace, key)) || [];
-  if (!Array.isArray(current)) throw new Error(`Cannot push into non-array key: ${key}`);
+  if (!Array.isArray(current)) throw new Error(`لا يمكن إضافة قيمة إلى مفتاح ليس مصفوفة: ${key}`);
   current.push(value);
   await set(namespace, key, current);
   return current;

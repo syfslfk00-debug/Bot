@@ -36,7 +36,7 @@ module.exports = (client2) => {
             }
             const clienter = new Client({intents:131071})
             await clienter.login(thetoken)
-            clienter.user.setActivity(`Hello I'm BC Bot`)
+        clienter.user.setActivity(`بوت برودكاست`)
             const embed1 = new EmbedBuilder()
             .setTitle(`**تم تسجيل الدخول بنجاح**`)
             .setTimestamp()

@@ -93,6 +93,9 @@ function createOptionResolver(command, args, message) {
       if (["false", "off", "no", "0", "ايقاف", "إيقاف", "لا"].includes(value)) return false;
       return null;
     },
+    getFocused() {
+      return args.join(" ") || "";
+    },
     getAttachment(name) {
       if (Object.prototype.hasOwnProperty.call(mapped, name)) return mapped[name];
       return message.attachments.first() || null;
@@ -119,24 +122,45 @@ function createShortcutInteraction(message, command, args) {
     options: createOptionResolver(command, [...args], message),
     isChatInputCommand: () => true,
     inGuild: () => Boolean(message.guild),
-    deferReply: async () => {
+    deferReply: async (options = {}) => {
       replyState.deferred = true;
       interaction.deferred = true;
+      if (options.fetchReply) {
+        return replyState.lastReply;
+      }
+      return undefined;
     },
     reply: async (payload) => {
       replyState.replied = true;
       interaction.replied = true;
       replyState.lastReply = await message.reply(payload);
+      if (payload?.ephemeral) {
+        replyState.lastReply.deleteReply = () => replyState.lastReply.delete?.().catch(() => {});
+      }
       return replyState.lastReply;
     },
     editReply: async (payload) => {
-      if (replyState.lastReply?.edit) return replyState.lastReply.edit(payload);
+      if (replyState.lastReply?.edit) {
+        const edited = await replyState.lastReply.edit(payload);
+        if (payload?.ephemeral) {
+          replyState.lastReply.deleteReply = () => replyState.lastReply.delete?.().catch(() => {});
+        }
+        return edited;
+      }
       replyState.replied = true;
       interaction.replied = true;
       replyState.lastReply = await message.reply(payload);
+      if (payload?.ephemeral) {
+        replyState.lastReply.deleteReply = () => replyState.lastReply.delete?.().catch(() => {});
+      }
       return replyState.lastReply;
     },
+    deleteReply: async () => {
+      if (replyState.lastReply?.delete) return replyState.lastReply.delete().catch(() => {});
+      return undefined;
+    },
     followUp: async (payload) => message.reply(payload),
+    fetchReply: async () => replyState.lastReply,
     deferUpdate: async () => {},
   };
   return interaction;
@@ -166,7 +190,10 @@ async function resolveShortcut(guildId, content) {
 async function executeSlashCommandFromMessage(message, commandName, trigger) {
   const command = message.client.CookiesSlashCommands?.get(commandName);
   if (!command) return false;
-  if (command.ownersOnly === true) return false;
+  if (command.ownersOnly === true) {
+    await message.reply("❗ **لا تستطيع استخدام هذا الأمر.**");
+    return true;
+  }
   if (command.adminsOnly === true && !message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
     await message.reply("❗ **يجب أن تمتلك صلاحية الأدمن لاستخدام هذا الأمر.**");
     return true;

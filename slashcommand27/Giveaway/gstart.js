@@ -31,7 +31,7 @@ if(!hasTimeUnit) return interaction.editReply({content:`**الرجاء تحدي�
 const remainingTimeSeconds = ms(duration) / 1000;
 const embed = new EmbedBuilder()
 .setTitle(`**${prize}**`)
-.setDescription(`Ends : <t:${Math.floor((Date.now() + ms(duration)) / 1000)}:R> (<t:${Math.floor((Date.now() + ms(duration)) / 1000)}:f>)\nHosted by : ${interaction.user}\nEntries : **0**\nWinners: **${winners}**`)
+.setDescription(`ينتهي: <t:${Math.floor((Date.now() + ms(duration)) / 1000)}:R> (<t:${Math.floor((Date.now() + ms(duration)) / 1000)}:f>)\nالمستضيف: ${interaction.user}\nالمشاركات: **0**\nعدد الفائزين: **${winners}**`)
 .setColor(`#5865f2`)
 .setTimestamp(Date.now() + ms(duration))
 const dir1 = Math.floor((Date.now() + ms(duration)) / 1000)

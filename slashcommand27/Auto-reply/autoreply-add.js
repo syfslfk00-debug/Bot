@@ -15,7 +15,7 @@ const matchTypes = [
     { label: "مطابق تمامًا", value: "exact" },
     { label: "يحتوي على النص", value: "contains" },
     { label: "يبدأ بـ", value: "startsWith" },
-    { label: "Regex", value: "regex" },
+    { label: "تعبير نمطي", value: "regex" },
 ];
 
 function buildPreviewEmbed(settings) {
@@ -23,9 +23,9 @@ function buildPreviewEmbed(settings) {
         .setColor(settings.embed.color || "Random")
         .setTitle("معاينة الرد التلقائي")
         .addFields(
-            { name: "Trigger", value: settings.trigger || "غير محدد", inline: true },
+            { name: "الكلمة", value: settings.trigger || "غير محدد", inline: true },
             { name: "نوع المطابقة", value: matchTypes.find(t => t.value === settings.type)?.label || "مطابق تمامًا", inline: true },
-            { name: "نوع الرد", value: settings.mode === "embed" ? "Embed" : "نصي", inline: true }
+            { name: "نوع الرد", value: settings.mode === "embed" ? "إيمبد" : "نصي", inline: true }
         );
     if (settings.mode === "embed") {
         embed.addFields(
@@ -99,7 +99,7 @@ module.exports = {
 
                 if (component.customId === "ar_basic") {
                     await askModal(component, "ar_modal_basic", "إعدادات الرد الأساسية", [
-                        { id: "trigger", label: "Trigger", required: true, value: settings.trigger },
+                        { id: "trigger", label: "الكلمة", required: true, value: settings.trigger },
                         { id: "reply", label: "الرد النصي / وصف افتراضي", style: TextInputStyle.Paragraph, required: false, value: settings.reply },
                     ]);
                     const modal = await component.awaitModalSubmit({ filter, time: 120000 }).catch(() => null);
@@ -123,7 +123,7 @@ module.exports = {
                         { id: "description", label: "وصف الإيمبد", style: TextInputStyle.Paragraph, required: false, value: settings.embed.description },
                         { id: "color", label: "اللون مثال #5865F2", required: false, value: settings.embed.color },
                         { id: "image", label: "رابط الصورة", required: false, value: settings.embed.image },
-                        { id: "thumbnail", label: "رابط Thumbnail", required: false, value: settings.embed.thumbnail },
+                        { id: "thumbnail", label: "رابط الصورة المصغرة", required: false, value: settings.embed.thumbnail },
                     ]);
                     const modal = await component.awaitModalSubmit({ filter, time: 120000 }).catch(() => null);
                     if (!modal) continue;
@@ -159,7 +159,7 @@ module.exports = {
                 if (component.customId === "ar_save") {
                     await component.deferUpdate();
                     if (!settings.trigger) {
-                        await interaction.followUp({ content: "❌ يجب تحديد Trigger قبل الحفظ.", ephemeral: true });
+                        await interaction.followUp({ content: "❌ يجب تحديد الكلمة قبل الحفظ.", ephemeral: true });
                         continue;
                     }
                     const replies = normalizeReplies(await getGuildReplies(interaction.guild.id));

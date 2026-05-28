@@ -1,5 +1,6 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const path = require("path");
+const { getGuildShortcuts } = require("./shortcutUtils");
 
 const CATEGORY_LABELS = {
   "Auto-reply": "الردود التلقائية",
@@ -62,6 +63,21 @@ function getCategoryLabel(category) {
   return CATEGORY_LABELS[category] || category;
 }
 
+function formatCommandHelpValue(command, shortcuts) {
+  const shortcut = shortcuts?.[command.data.name];
+  const lines = [command.data.description || "لا يوجد وصف متوفر."];
+  if (shortcut) lines.push(`**الاختصار:** \`${shortcut}\``);
+  return lines.join("\n");
+}
+
+function buildCommandHelpFields(commands, shortcuts, limit = 25) {
+  return commands.slice(0, limit).map((command) => ({
+    name: `\`/${command.data.name}\``,
+    value: formatCommandHelpValue(command, shortcuts),
+    inline: false,
+  }));
+}
+
 function buildHelpButtons(client, activeCategory = null) {
   const categories = Array.from(getCommandsByCategory(client).keys()).sort((a, b) => getCategoryLabel(a).localeCompare(getCategoryLabel(b)));
   const rows = [];
@@ -84,25 +100,32 @@ function buildHelpButtons(client, activeCategory = null) {
   return rows;
 }
 
-function buildMainHelpEmbed(interaction, client) {
+async function buildMainHelpEmbed(interaction, client) {
   const grouped = getCommandsByCategory(client);
+  const shortcuts = await getGuildShortcuts(interaction.guild.id);
   const total = Array.from(grouped.values()).reduce((sum, list) => sum + list.length, 0);
   const lines = Array.from(grouped.keys())
     .sort((a, b) => getCategoryLabel(a).localeCompare(getCategoryLabel(b)))
     .map((category) => `${CATEGORY_EMOJIS[category] || "📌"} **${getCategoryLabel(category)}**: ${grouped.get(category).length} أمر`);
 
+  const shortcutEntries = Object.entries(shortcuts);
+  if (shortcutEntries.length) {
+    lines.push("", `**الاختصارات المسجلة:** ${shortcutEntries.length} اختصار`);
+  }
+
   return new EmbedBuilder()
     .setAuthor({ name: interaction.guild.name, iconURL: interaction.guild.iconURL({ dynamic: true }) })
     .setTitle("قائمة أوامر البوت")
     .setDescription(`اختر قسمًا من الأزرار بالأسفل لعرض أوامره.\n\n${lines.join("\n")}`)
-    .addFields({ name: "عدد الأوامر", value: `\`/${total}\` أمر مسجل تلقائيًا`, inline: false })
+    .addFields({ name: "عدد الأوامر", value: `\`${total}\` أمر مسجل تلقائيًا`, inline: false })
     .setTimestamp()
     .setFooter({ text: `طلب بواسطة ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL({ dynamic: true }) })
     .setColor("DarkButNotBlack");
 }
 
-function buildCategoryHelpEmbed(interaction, client, category) {
+async function buildCategoryHelpEmbed(interaction, client, category) {
   const grouped = getCommandsByCategory(client);
+  const shortcuts = await getGuildShortcuts(interaction.guild.id);
   const commands = grouped.get(category) || [];
   const embed = new EmbedBuilder()
     .setAuthor({ name: interaction.guild.name, iconURL: interaction.guild.iconURL({ dynamic: true }) })
@@ -116,12 +139,7 @@ function buildCategoryHelpEmbed(interaction, client, category) {
     return embed;
   }
 
-  const fields = commands.slice(0, 25).map((command) => ({
-    name: `\`/${command.data.name}\``,
-    value: command.data.description || "لا يوجد وصف متوفر.",
-    inline: false,
-  }));
-  embed.addFields(fields);
+  embed.addFields(buildCommandHelpFields(commands, shortcuts));
   if (commands.length > 25) embed.setDescription(`تم عرض أول 25 أمرًا من أصل ${commands.length}.`);
   return embed;
 }
@@ -130,7 +148,7 @@ async function handleDynamicHelpInteraction(interaction) {
   if (!interaction.isButton() || !interaction.customId.startsWith("help_dynamic_")) return false;
   const category = interaction.customId.replace("help_dynamic_", "");
   await interaction.update({
-    embeds: [buildCategoryHelpEmbed(interaction, interaction.client, category)],
+    embeds: [await buildCategoryHelpEmbed(interaction, interaction.client, category)],
     components: buildHelpButtons(interaction.client, category),
   });
   return true;

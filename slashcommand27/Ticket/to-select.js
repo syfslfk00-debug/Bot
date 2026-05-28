@@ -146,7 +146,7 @@ module.exports = {
                     resolve(i);
                 });
                 collector.on('end', (collected, reason) => {
-                    if (collected.size === 0) reject(new Error('timeout'));
+                if (collected.size === 0) reject(new Error('انتهى الوقت'));
                 });
             });
 

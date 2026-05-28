@@ -14,7 +14,7 @@ async function migrateFile(filePath) {
   try {
     raw = fs.readFileSync(filePath, 'utf8');
   } catch (error) {
-    console.error(`[migrate] Failed to read ${rel}:`, error.message);
+    console.error(`[migrate] فشل قراءة ${rel}:`, error.message);
     return;
   }
 
@@ -22,13 +22,13 @@ async function migrateFile(filePath) {
   try {
     parsed = JSON.parse(raw || '{}');
   } catch (error) {
-    console.error(`[migrate] Invalid JSON ${rel}:`, error.message);
+    console.error(`[migrate] ملف JSON غير صالح ${rel}:`, error.message);
     return;
   }
 
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     await keyValueService.set(namespace, '__root__', parsed);
-    console.log(`[migrate] migrated root payload for ${rel}`);
+    console.log(`[migrate] تم ترحيل المحتوى الأساسي من ${rel}`);
     return;
   }
 
@@ -37,7 +37,7 @@ async function migrateFile(filePath) {
     await keyValueService.set(namespace, key, value);
   }
 
-  console.log(`[migrate] migrated ${entries.length} keys from ${rel}`);
+  console.log(`[migrate] تم ترحيل ${entries.length} مفتاح من ${rel}`);
 }
 
 function walk(dir) {
@@ -59,21 +59,21 @@ async function main() {
     const stamp = new Date().toISOString().replace(/[.:]/g, '-');
     const backupPath = path.join(BACKUP_DIR, `Json-db-${stamp}`);
     fs.cpSync(DB_ROOT, backupPath, { recursive: true });
-    console.log(`[migrate] backup created at ${backupPath}`);
+    console.log(`[migrate] تم إنشاء نسخة احتياطية في ${backupPath}`);
 
     const files = walk(DB_ROOT);
     for (const file of files) {
       await migrateFile(file);
     }
   } else {
-    console.warn('[migrate] Json-db directory not found, nothing to migrate');
+    console.warn('[migrate] مجلد Json-db غير موجود، لا يوجد شيء للترحيل');
   }
 
-  console.log('[migrate] done');
+  console.log('[migrate] تم الانتهاء');
   process.exit(0);
 }
 
 main().catch((err) => {
-  console.error('[migrate] failed:', err);
+  console.error('[migrate] فشل الترحيل:', err);
   process.exit(1);
 });

@@ -1,7 +1,7 @@
 {
   "name": "Cookies",
   "version": "1.0.0",
-  "description": "compelete system bot",
+  "description": "بوت نظام متكامل",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"

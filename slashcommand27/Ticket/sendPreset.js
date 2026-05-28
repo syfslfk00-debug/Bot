@@ -38,7 +38,7 @@ module.exports = {
   async execute(interaction) {
     if (!interaction.member.permissions.has(require("discord.js").PermissionsBitField.Flags.Administrator)) {
       return interaction.reply({
-        content: "❌ تحتاج إلى صلاحية `Administrator` لاستخدام هذا الأمر.",
+        content: "❌ تحتاج إلى صلاحية الإدارة لاستخدام هذا الأمر.",
         flags: MessageFlags.Ephemeral,
       });
     }

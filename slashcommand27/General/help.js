@@ -10,11 +10,11 @@ module.exports = {
         try {
             await interaction.deferReply();
             await interaction.editReply({
-                embeds: [buildMainHelpEmbed(interaction, interaction.client)],
+                embeds: [await buildMainHelpEmbed(interaction, interaction.client)],
                 components: buildHelpButtons(interaction.client),
             });
         } catch (error) {
-            console.log("🔴 | Error in help all in one bot", error);
+            console.log("🔴 | خطأ في أمر help", error);
         }
     }
 };

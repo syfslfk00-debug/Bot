@@ -16,7 +16,7 @@ module.exports = {
                 ))
         .addStringOption(option =>
             option.setName('color')
-                .setDescription('لون الامبد بـ hex code')
+                .setDescription('لون الامبد بصيغة HEX')
                 .setRequired(false)),
     async execute(interaction) {
         const mode = interaction.options.getString('mode');

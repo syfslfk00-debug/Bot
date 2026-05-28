@@ -1,11 +1,10 @@
-const { Client, Collection,SlashCommandBuilder,ChannelType , discord,GatewayIntentBits, Partials , EmbedBuilder, ApplicationCommandOptionType , Events , ActionRowBuilder , ButtonBuilder ,MessageAttachment, ButtonStyle , Message } = require("discord.js");
-const keyValueService = require("../../services/keyValueService");
+const { SlashCommandBuilder, ChannelType, EmbedBuilder } = require("discord.js");
 
 module.exports = {
     ownersOnly:false,
     data: new SlashCommandBuilder()
     .setName('server')
-    .setDescription('رؤية معلومات السيرفر   '), // or false
+    .setDescription('رؤية معلومات السيرفر'),
 async execute(interaction) {
     await interaction.deferReply({ephemeral:false})
     const embed = new EmbedBuilder()
@@ -13,26 +12,26 @@ async execute(interaction) {
     .setColor(`Random`)
     .addFields(
         {
-            name:`**🆔 Server ID:**` , value:interaction.guild.id , inline:false
+            name:`**🆔 ايدي السيرفر:**` , value:interaction.guild.id , inline:false
         },
         {
-            name:`**📆 Created On:**` , value:`**<t:${parseInt(interaction.guild.createdTimestamp / 1000)}:R>**` , inline:false
+            name:`**📆 تم إنشاؤه:**` , value:`**<t:${parseInt(interaction.guild.createdTimestamp / 1000)}:R>**` , inline:false
         },
         {
-            name:`**👑 Owned By :**` , value:`**<@${interaction.guild.ownerId}>**` , inline:false
+            name:`**👑 مالك السيرفر:**` , value:`**<@${interaction.guild.ownerId}>**` , inline:false
         },
         {
-            name:`**👥 Members (${interaction.guild.memberCount})**` , value:`**${interaction.guild.premiumSubscriptionCount} Boosts ✨**` , inline:false
+            name:`**👥 الأعضاء (${interaction.guild.memberCount})**` , value:`**${interaction.guild.premiumSubscriptionCount} بوست ✨**` , inline:false
         },
         {
-            name:`**💬 Channels (${interaction.guild.channels.cache.size})**` , value:`**${interaction.guild.channels.cache.filter((r) => r.type == ChannelType .GuildText).size}** Text | **${
-                interaction.guild.channels.cache.filter((r) => r.type == ChannelType .GuildVoice).size
-            }** Voice | **${interaction.guild.channels.cache.filter((r) => r.type === ChannelType.GuildCategory).size}** Category` , inline:false
+            name:`**💬 الرومات (${interaction.guild.channels.cache.size})**` , value:`**${interaction.guild.channels.cache.filter((r) => r.type == ChannelType.GuildText).size}** كتابية | **${
+                interaction.guild.channels.cache.filter((r) => r.type == ChannelType.GuildVoice).size
+            }** صوتية | **${interaction.guild.channels.cache.filter((r) => r.type === ChannelType.GuildCategory).size}** تصنيف` , inline:false
        
         },
         {
-            name: '🌍 Others',
-            value: `**Verification Level:** ${interaction.guild.verificationLevel}`,
+            name: '🌍 معلومات أخرى',
+            value: `**مستوى التحقق:** ${interaction.guild.verificationLevel}`,
             inline: false,
         },
     )

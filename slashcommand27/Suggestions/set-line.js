@@ -29,7 +29,7 @@ module.exports = {
                 .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL({ dynamic: true }) });
             return interaction.editReply({ embeds: [embed] });
         } catch (error) {
-            console.log("⛔ | error in set-line command", error);
+            console.log("⛔ | خطأ في أمر تحديد الخط", error);
         }
     }
 };

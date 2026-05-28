@@ -13,6 +13,6 @@ module.exports = {
             type: ActivityType.Playing, 
         });
         
-        console.log(`Bot is now online as ${client.user.tag}`);
+        console.log(`البوت متصل الآن باسم ${client.user.tag}`);
     },
 };

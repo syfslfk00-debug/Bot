@@ -65,7 +65,7 @@ async execute(interaction) {
         }
     })  
     } catch (error) {
-        console.log("🔴 | error in banner command" , error)
+        console.log("🔴 | خطأ في أمر banner" , error)
         await interaction.editReply({content : `لقد حدث خطا اتصل بالمطورين`})
     }
 }

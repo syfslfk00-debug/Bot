@@ -9,7 +9,7 @@ async function connectDatabase() {
 
   const uri = process.env.MONGODB_URI;
   if (!uri) {
-    throw new Error('MONGODB_URI is missing in environment variables');
+    throw new Error('متغير MONGODB_URI غير موجود في متغيرات البيئة');
   }
 
   isConnecting = true;
@@ -25,11 +25,11 @@ async function connectDatabase() {
           serverSelectionTimeoutMS: 10000,
           maxPoolSize: 20,
         });
-        console.log(`[MongoDB] Connected on attempt ${attempts}`);
+        console.log(`[MongoDB] تم الاتصال في المحاولة ${attempts}`);
         isConnecting = false;
         return mongoose.connection;
       } catch (error) {
-        console.error(`[MongoDB] Connection attempt ${attempts} failed:`, error.message);
+        console.error(`[MongoDB] فشلت محاولة الاتصال ${attempts}:`, error.message);
         if (attempts >= maxAttempts) {
           isConnecting = false;
           connectPromise = null;
@@ -44,15 +44,15 @@ async function connectDatabase() {
 }
 
 mongoose.connection.on('disconnected', () => {
-  console.warn('[MongoDB] Disconnected');
+  console.warn('[MongoDB] انقطع الاتصال');
 });
 
 mongoose.connection.on('reconnected', () => {
-  console.log('[MongoDB] Reconnected');
+  console.log('[MongoDB] تمت إعادة الاتصال');
 });
 
 mongoose.connection.on('error', (err) => {
-  console.error('[MongoDB] Error:', err.message);
+  console.error('[MongoDB] خطأ:', err.message);
 });
 
 module.exports = {

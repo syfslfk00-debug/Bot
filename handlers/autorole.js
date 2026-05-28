@@ -6,9 +6,9 @@ const {
 module.exports = (client27) => {
   client27.on(Events.InteractionCreate, async (interaction) => {
     if (interaction.isButton()) {
-      const [prefix, guildId, roleId] = interaction.customId.split("_");
+      const [customIdPrefix, guildId, roleId] = interaction.customId.split("_");
 
-      if (prefix !== "getrole") return; 
+      if (customIdPrefix !== "getrole") return; 
 
       const role = interaction.guild.roles.cache.get(roleId);
       if (!role) {
