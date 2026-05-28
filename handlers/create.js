@@ -1,4 +1,9 @@
 const keyValueService = require("../services/keyValueService");
+const {
+    getNextTicketId,
+    buildTicketChannelName,
+    createTicketMetadata
+} = require("../utils/ticketUtils");
 
 const {
     StringSelectMenuOptionBuilder,
@@ -26,7 +31,7 @@ module.exports = (client27) => {
                 return;
             }
             const data = await keyValueService.get('ticketDB', `Ticket_${interaction.channel.id}_${customId}`);
-            if (!data) return interaction.reply({ content: `Please Setup Again`, ephemeral: true });
+            if (!data) return interaction.reply({ content: `❌ يرجى إعداد لوحة التذاكر مرة أخرى.`, ephemeral: true });
 
             if (data.Ask === 'on') {
                 const modal = new ModalBuilder()
@@ -50,7 +55,7 @@ module.exports = (client27) => {
         if (interaction.isModalSubmit() && interaction.customId.endsWith('_modal')) {
             const buttonCustomId = interaction.customId.replace('_modal', '');
             const data = await keyValueService.get('ticketDB', `Ticket_${interaction.channel.id}_${buttonCustomId}`);
-            if (!data) return interaction.reply({ content: `Please Setup Again`, ephemeral: true });
+            if (!data) return interaction.reply({ content: `❌ يرجى إعداد لوحة التذاكر مرة أخرى.`, ephemeral: true });
 
             const ticketReason = interaction.fields.getTextInputValue('ticket_reason');
             createTicketChannel(interaction, data, ticketReason);
@@ -60,8 +65,9 @@ module.exports = (client27) => {
 };
 
 async function createTicketChannel(interaction, data, ticketReason = null) {
+    const ticketId = await getNextTicketId(interaction.guild.id);
     const channel = await interaction.guild.channels.create({
-        name: `ticket-${interaction.user.username}`,
+        name: buildTicketChannelName(ticketId),
         type: 0,
         parent: data.Category,
         permissionOverwrites: [
@@ -80,8 +86,15 @@ async function createTicketChannel(interaction, data, ticketReason = null) {
         ],
     });
 
-    await keyValueService.set('ticketDB', `TICKET-PANEL_${channel.id}`, { author: interaction.user.id, Support: data.Support });
-    interaction.reply({ content: `${channel} has been created :white_check_mark:`, ephemeral: true });
+    await keyValueService.set('ticketDB', `TICKET-PANEL_${channel.id}`, createTicketMetadata({
+        ticketId,
+        ownerId: interaction.user.id,
+        supportRoleId: data.Support,
+        category: data.Category,
+        channelId: channel.id,
+        guildId: interaction.guild.id,
+    }));
+    interaction.reply({ content: `✅ تم إنشاء التذكرة ${channel} بنجاح.`, ephemeral: true });
 
     const mentionLine = `**${interaction.user} | <@&${data.Support}>**`;
     const welcomeMessage = data.Internal || '';

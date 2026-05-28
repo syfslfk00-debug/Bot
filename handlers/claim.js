@@ -1,5 +1,6 @@
 const { StringSelectMenuOptionBuilder, StringSelectMenuBuilder, SlashCommandBuilder, Events, ActivityType, ModalBuilder, TextInputStyle, EmbedBuilder, PermissionsBitField, ButtonStyle, TextInputBuilder, ActionRowBuilder, ButtonBuilder, MessageComponentCollector, Embed } = require("discord.js")
 const keyValueService = require("../services/keyValueService");
+const { canManageTicket, updateTicketData } = require("../utils/ticketUtils");
 
 const select = new StringSelectMenuBuilder()
     .setCustomId('supportPanel')
@@ -19,12 +20,15 @@ module.exports = (client7) => {
             const [action] = interaction.customId.split('_')
 
             if (action === 'claim') {
-                const Support = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`).Support
-                if (!interaction.member.roles.cache.has(Support)) {
-                    return interaction.reply({ content: `:x: Only Support`, ephemeral: true })
+                const ticket = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`);
+                if (!ticket) return interaction.reply({ content: `❌ هذه القناة ليست تذكرة.`, ephemeral: true });
+                const Support = ticket.Support;
+                if (!canManageTicket(interaction.member, ticket)) {
+                    return interaction.reply({ content: `❌ هذا الإجراء متاح لفريق الدعم أو الإداريين فقط.`, ephemeral: true })
                 }
 
                 await keyValueService.set('ticketDB', `Claimed_${interaction.channel.id}`, interaction.user.id)
+                await updateTicketData(interaction.channel.id, { claimedBy: interaction.user.id })
 
                 const Row = new ActionRowBuilder()
                     .addComponents(
@@ -36,21 +40,24 @@ module.exports = (client7) => {
                     .setDescription(`**${interaction.user} قام بإستلام التذكره**`)
                     .setColor(`Blue`)
 
-                await interaction.channel.permissionOverwrites.edit(Support, { SendMessages: false })
+                if (Support) await interaction.channel.permissionOverwrites.edit(Support, { SendMessages: false })
                 await interaction.channel.permissionOverwrites.edit(interaction.user.id, { SendMessages: true })
                 await interaction.deferUpdate()
                 await interaction.editReply({ components: [Row, Row2] })
                 await interaction.channel.send({ embeds: [claimembed] })
             } else if (action === 'unclaim') {
                 if (await keyValueService.get('ticketDB', `Claimed_${interaction.channel.id}`) == interaction.user.id) {
-                    const Support = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`)?.Support
+                    const ticket = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`);
+                    if (!ticket) return interaction.reply({ content: `❌ هذه القناة ليست تذكرة.`, ephemeral: true });
+                    const Support = ticket.Support
 
-                    if (!interaction.member.roles.cache.has(Support)) {
-                        return interaction.reply({ content: `:x: Only Support`, ephemeral: true })
+                    if (!canManageTicket(interaction.member, ticket)) {
+                        return interaction.reply({ content: `❌ هذا الإجراء متاح لفريق الدعم أو الإداريين فقط.`, ephemeral: true })
                     }
 
-                    await interaction.channel.permissionOverwrites.edit(Support, { SendMessages: true })
+                    if (Support) await interaction.channel.permissionOverwrites.edit(Support, { SendMessages: true })
                     await interaction.channel.permissionOverwrites.edit(interaction.user.id, { SendMessages: false })
+                    await updateTicketData(interaction.channel.id, { claimedBy: null })
                     let unclaimembed = new EmbedBuilder()
                         .setDescription(`**${interaction.user} ألغاء استلام التذكره**`)
                         .setColor(`Blue`)
@@ -65,7 +72,7 @@ module.exports = (client7) => {
                     await interaction.editReply({ components: [Row, Row2] })
                     return interaction.channel.send({ embeds: [unclaimembed] })
                 } else {
-                    return interaction.reply({ content: `**التيكت ليست لك**`, ephemeral: true })
+                    return interaction.reply({ content: `**هذه التذكرة ليست مستلمة باسمك**`, ephemeral: true })
                 }
             }
         }

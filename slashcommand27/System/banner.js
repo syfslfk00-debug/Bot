@@ -35,16 +35,16 @@ async execute(interaction) {
             let button = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                             .setStyle(5)
-                            .setLabel("Download")
+                            .setLabel("تحميل")
                             .setURL(url)
             )
             
             let embed = new EmbedBuilder()
                                 .setAuthor({name:user.username , iconURL:user.displayAvatarURL({dynamic:true , size:1024})})
-                                .setTitle(`Banner link`)
+                                .setTitle(`رابط البانر`)
                                 .setURL(url)
                                 .setImage(url)
-                                .setFooter({text:`Requested by ` + interaction.user.username , iconURL:interaction.user.displayAvatarURL({dynamic:true})})
+                                .setFooter({text:`طلب بواسطة: ` + interaction.user.username , iconURL:interaction.user.displayAvatarURL({dynamic:true})})
 
             await interaction.editReply({embeds : [embed] , components : [button]});
         }else{
@@ -52,11 +52,11 @@ async execute(interaction) {
                 let url = `https://serux.pro/rendercolour?hex=${accent_color}&height=200&width=512` 
                 let embed = new EmbedBuilder()
                 .setAuthor({name:user.username , iconURL:user.displayAvatarURL({dynamic:true , size:1024})})
-                .setTitle(`Banner link`)
+                .setTitle(`رابط البانر`)
                 .setURL(url)
                 .setImage(url)
                 .setColor(accent_color)
-                .setFooter({text:`Requested by ` + interaction.user.username , iconURL:interaction.user.displayAvatarURL({dynamic:true})})
+                .setFooter({text:`طلب بواسطة: ` + interaction.user.username , iconURL:interaction.user.displayAvatarURL({dynamic:true})})
 
                 await interaction.editReply({embeds : [embed]});
             }else{

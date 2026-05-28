@@ -1,48 +1,34 @@
-const {ChatInputCommandInteraction , Client , SlashCommandBuilder, EmbedBuilder , PermissionsBitField, ActionRowBuilder,ButtonBuilder,MessageComponentCollector,ButtonStyle } = require("discord.js");
-const keyValueService = require("../../services/keyValueService");
+const { ChatInputCommandInteraction, Client, SlashCommandBuilder } = require("discord.js");
+const { getGuildReplies, saveGuildReplies } = require("../../utils/autoReplyUtils");
 
-module.exports ={
-    adminsOnly:true,
+module.exports = {
+    adminsOnly: true,
     data: new SlashCommandBuilder()
-    .setName('autoreply-remove')
-    .setDescription('لازالة رد تلقائي')
-    .addStringOption(Option => Option
-                            .setName(`word`)
-                            .setDescription(`الكلمة`)
-                            .setRequired(true)),
+        .setName('autoreply-remove')
+        .setDescription('حذف رد تلقائي')
+        .addStringOption(Option => Option
+            .setName(`trigger`)
+            .setDescription(`Trigger الرد التلقائي`)
+            .setRequired(true)),
     /**
      * @param {ChatInputCommandInteraction} interaction
      * @param {Client} client
      */
     async execute(interaction, client) {
         try {
-            await interaction.deferReply();
-            const word = interaction.options.getString(`word`)
-
-            // البحث عن الردود التلقائية في السيرفر
-            const replysCheck = await keyValueService.get('CookiesDB', `replys_${interaction.guild.id}`);
-
-            // اذا وجدت الردود التلقائية في السيرفر
-            if(replysCheck){
-                    // البحث اذا وجد رد بهذه الكلمة
-                    const data = await replysCheck.find((r) => r.word == word)
-                    // اذا هناك رد بهذه الكلمة
-                    if(data){
-                        // حذف الرد من الردود التلقائية
-                        const replysFiltered = replysCheck.filter(r => r.word !== word)
-                        await keyValueService.set('CookiesDB', `replys_${interaction.guild.id}` , replysFiltered)
-                        return interaction.editReply({content : `**تم حذف الرد التلقائي \`${word}\`**`});
-                    }else{
-                        // اذا لم يوجد رد بهذه الكلمة
-                        return interaction.editReply({content : `**لا يوجد رد بهذه الكلمة \`${word}\`**`});
-                    }
-            }else{
-                // اذا لم توجد ردود تلقائية في السيرفر
-                return interaction.editReply({content : `**لا يوجد رد بهذه الكلمة \`${word}\`**`});
+            await interaction.deferReply({ ephemeral: true });
+            const trigger = interaction.options.getString(`trigger`);
+            const replies = await getGuildReplies(interaction.guild.id);
+            const data = replies.find((r) => (r.trigger || r.word) === trigger);
+            if (data) {
+                const filtered = replies.filter((r) => (r.trigger || r.word) !== trigger);
+                await saveGuildReplies(interaction.guild.id, filtered);
+                return interaction.editReply({ content: `**تم حذف الرد التلقائي \`${trigger}\`**` });
             }
-        } catch {
-            return interaction.editReply({content:`**لقد حدث خطا اتصل بالمطورين**`})
+            return interaction.editReply({ content: `**لا يوجد رد بهذا الـ Trigger \`${trigger}\`**` });
+        } catch (error) {
+            console.error(error);
+            return interaction.editReply({ content: `**لقد حدث خطأ، حاول مرة أخرى.**` });
         }
     }
-}
- 
+};

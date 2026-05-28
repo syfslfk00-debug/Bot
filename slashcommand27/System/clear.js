@@ -17,10 +17,10 @@ async execute(interaction) {
         if(number > 100){
             return interaction.reply({content : `**لا يمكنك حذف اكثر من _100_ رسالة**` , ephemeral : true})
         }else{
-            await interaction.reply({ephemeral:true , content:`Deleting messages ...`})
+            await interaction.reply({ephemeral:true , content:`جارٍ حذف الرسائل ...`})
             await interaction.channel.messages.fetch({limit:100})
             await interaction.channel.bulkDelete(number).then(async(messages) => {
-                await interaction.editReply({content:`**\`\`\`${messages.size} of messages , has been deleted\`\`\`**`})
+                await interaction.editReply({content:`**\`\`\`تم حذف ${messages.size} رسالة\`\`\`**`})
                 setTimeout(() => {
                     return interaction.deleteReply()
                 }, 1500);

@@ -16,6 +16,10 @@ const {
 } = require("discord.js");
 const moment = require("moment");
 const keyValueService = require("./services/keyValueService");
+const { handleAutoReplyMessage } = require("./utils/autoReplyUtils");
+const { handleShortcutMessage } = require("./utils/shortcutUtils");
+const { handleDynamicHelpInteraction } = require("./utils/helpUtils");
+const { canManageTicket, normalizeTicketMetadata, markTicketClosed, sendTicketCloseLog } = require("./utils/ticketUtils");
 const ms = require("ms");
 
 
@@ -88,6 +92,8 @@ for (let folder of readdirSync(folderPath).filter(
     delete require.cache[require.resolve(filePath)];
     let command = require(filePath);
     if (command) {
+      command.category = command.category || folder;
+      command.filePath = command.filePath || filePath;
       CookiesSlashCommands.push(command.data.toJSON());
       client27.CookiesSlashCommands.set(command.data.name, command);
       if (command.data.name) {
@@ -166,6 +172,18 @@ client27.on("messageCreate", async (message) => {
 
 // ── InteractionCreate (slash commands) ──
 client27.on("interactionCreate", async (interaction) => {
+  if (interaction.isAutocomplete()) {
+    const command = client27.CookiesSlashCommands.get(interaction.commandName);
+    if (command?.autocomplete) {
+      try {
+        await command.autocomplete(interaction);
+      } catch (error) {
+        console.log("🔴 | error in autocomplete", error);
+      }
+    }
+    return;
+  }
+
   if (interaction.isChatInputCommand()) {
     if (interaction.user.bot) return;
     const command = client27.CookiesSlashCommands.get(interaction.commandName);
@@ -730,15 +748,18 @@ client27.on("messageCreate", async (message) => {
 client27.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   if (message.content == `${prefix}close`) {
-    const supportRoleID = await keyValueService.get('ticketDB', `TICKET-PANEL_${message.channel.id}`)?.Support;
-    /* if (!message.member.roles.cache.has(supportRoleID)) { ... } */
     const ticket = await keyValueService.get('ticketDB', `TICKET-PANEL_${message.channel.id}`);
     if (!ticket) return message.reply("هذه ليست تذكرة.");
+    if (!canManageTicket(message.member, ticket) && (ticket.ownerId || ticket.author) !== message.author.id) {
+      return message.reply("❌ لا تمتلك صلاحية إغلاق هذه التذكرة.");
+    }
 
-    await message.channel.permissionOverwrites.edit(ticket.author, { ViewChannel: false });
+    const closedTicket = await markTicketClosed(message.channel, message.author);
+    const ownerId = closedTicket.ownerId || closedTicket.author;
+    if (ownerId) await message.channel.permissionOverwrites.edit(ownerId, { ViewChannel: false }).catch(() => {});
 
     const embed2 = new EmbedBuilder()
-      .setDescription(`تم اغلاق تذكرة بواسطة ${message.author}`)
+      .setDescription(`تم إغلاق التذكرة بواسطة ${message.author}`)
       .setColor("Yellow");
 
     const embed = new EmbedBuilder()
@@ -746,54 +767,40 @@ client27.on("messageCreate", async (message) => {
       .setColor("DarkButNotBlack");
 
     const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId("delete").setLabel("Delete").setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setCustomId("Open").setLabel("Open").setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId("Tran").setLabel("Transcript").setStyle(ButtonStyle.Secondary)
+      new ButtonBuilder().setCustomId("delete").setLabel("حذف").setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId("Open").setLabel("فتح").setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId("Tran").setLabel("نسخة نصية").setStyle(ButtonStyle.Secondary)
     );
 
     await message.reply({ embeds: [embed2, embed], components: [row] });
-
-    const logsRoomId = await keyValueService.get('ticketDB', `LogsRoom_${message.guild.id}`);
-    const logChannel = message.guild.channels.cache.get(logsRoomId);
-    if (logChannel) {
-      const logEmbed = new EmbedBuilder()
-        .setAuthor({ name: message.author.tag, iconURL: message.author.displayAvatarURL() })
-        .setTitle("Close Ticket")
-        .addFields(
-          { name: "Name Ticket", value: `${message.channel.name}` },
-          { name: "Owner Ticket", value: `${ticket.author}` },
-          { name: "Closed By", value: `${message.author}` }
-        )
-        .setFooter({ text: message.author.tag, iconURL: message.author.displayAvatarURL() });
-      logChannel.send({ embeds: [logEmbed] });
-    }
+    await sendTicketCloseLog(message.guild, closedTicket, message.channel, message.author);
   }
 
   if (message.content == `${prefix}delete`) {
-    const supportRoleId = await keyValueService.get('ticketDB', `TICKET-PANEL_${message.channel.id}`)?.Support;
-    if (!message.member.roles.cache.has(supportRoleId)) {
-      return message.reply({ content: ":x: Only Support", ephemeral: true });
+    const Ticket = await keyValueService.get('ticketDB', `TICKET-PANEL_${message.channel.id}`);
+    if (!Ticket) {
+      return message.reply({ content: "هذه القناة ليست تذكرة" });
     }
-    if (!await keyValueService.has('ticketDB', `TICKET-PANEL_${message.channel.id}`)) {
-      return message.reply({ content: "This channel isn't a ticket", ephemeral: true });
+    if (!canManageTicket(message.member, Ticket)) {
+      return message.reply({ content: "❌ هذا الأمر متاح لفريق الدعم أو الإداريين فقط." });
     }
-    const embed = new EmbedBuilder().setColor("Red").setDescription("Ticket will be deleted in a few seconds");
+    const embed = new EmbedBuilder().setColor("Red").setDescription("سيتم حذف التذكرة خلال ثوانٍ");
     await message.reply({ embeds: [embed] });
 
     setTimeout(() => {
-      message.channel.delete();
+      message.channel.delete().catch(() => {});
     }, 4500);
 
     const Logs = await keyValueService.get('ticketDB', `LogsRoom_${message.guild.id}`);
     const Log = message.guild.channels.cache.get(Logs);
-    const Ticket = await keyValueService.get('ticketDB', `TICKET-PANEL_${message.channel.id}`);
+    const normalized = normalizeTicketMetadata(Ticket, message.channel);
     const logEmbed = new EmbedBuilder()
       .setAuthor({ name: message.author.tag, iconURL: message.author.displayAvatarURL() })
-      .setTitle("Delete Ticket")
+      .setTitle("حذف تذكرة")
       .addFields(
-        { name: "Name Ticket", value: `${message.channel.name}` },
-        { name: "Owner Ticket", value: `${Ticket.author}` },
-        { name: "Deleted By", value: `${message.author}` }
+        { name: "اسم التذكرة", value: `${message.channel.name}` },
+        { name: "صاحب التذكرة", value: normalized.ownerId ? `<@${normalized.ownerId}>` : "غير معروف" },
+        { name: "حذف بواسطة", value: `${message.author}` }
       )
       .setFooter({ text: message.author.tag, iconURL: message.author.displayAvatarURL() });
     Log?.send({ embeds: [logEmbed] });
@@ -887,7 +894,7 @@ client27.on("messageCreate", async (message) => {
     await message.channel.permissionOverwrites.edit(message.channel.guild.roles.everyone, {
       SendMessages: false,
     });
-    return message.reply({ content: `**${message.channel} has been locked**` });
+    return message.reply({ content: `**تم قفل ${message.channel}**` });
   }
 
   const cmdUnlock = (await keyValueService.get('shortcutDB', `unlock_cmd_${message.guild.id}`)) || null;
@@ -900,7 +907,7 @@ client27.on("messageCreate", async (message) => {
     await message.channel.permissionOverwrites.edit(message.channel.guild.roles.everyone, {
       SendMessages: true,
     });
-    return message.reply({ content: `**${message.channel} has been unlocked**` });
+    return message.reply({ content: `**تم فتح ${message.channel}**` });
   }
 
   const cmdHide = (await keyValueService.get('shortcutDB', `hide_cmd_${message.guild.id}`)) || null;
@@ -913,7 +920,7 @@ client27.on("messageCreate", async (message) => {
     await message.channel.permissionOverwrites.edit(message.channel.guild.roles.everyone, {
       ViewChannel: false,
     });
-    return message.reply({ content: `**${message.channel} has been hidden**` });
+    return message.reply({ content: `**تم إخفاء ${message.channel}**` });
   }
 
   const cmdUnhide = (await keyValueService.get('shortcutDB', `unhide_cmd_${message.guild.id}`)) || null;
@@ -926,7 +933,7 @@ client27.on("messageCreate", async (message) => {
     await message.channel.permissionOverwrites.edit(message.channel.guild.roles.everyone, {
       ViewChannel: true,
     });
-    return message.reply({ content: `**${message.channel} has been unhidded**` });
+    return message.reply({ content: `**تم إظهار ${message.channel}**` });
   }
 
   const cmdServer = (await keyValueService.get('shortcutDB', `server_cmd_${message.guild.id}`)) || null;
@@ -1624,17 +1631,14 @@ client27.on("guildMemberAdd", async (member) => {
 
 // ── Auto reply ──
 client27.on("messageCreate", async (message) => {
-  if (message.author.bot) return;
-  const autoReplys = await keyValueService.get('CookiesDB', `replys_${message.guild.id}`);
-  if (!autoReplys) return;
-  const data = autoReplys.find((r) => r.word == message.content);
-  if (!data) return;
-  message.reply(`${data.reply}`);
+  await handleShortcutMessage(message).catch(console.error);
+  await handleAutoReplyMessage(message).catch(console.error);
 });
 
 // ── Help interaction (buttons) ──
 client27.on("interactionCreate", async (interaction) => {
   if (!interaction.isButton()) return;
+  if (await handleDynamicHelpInteraction(interaction)) return;
   const { customId } = interaction;
   let embed;
   const baseBtns1 = new ActionRowBuilder().addComponents(

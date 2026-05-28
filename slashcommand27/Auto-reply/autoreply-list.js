@@ -1,46 +1,50 @@
-const {ChatInputCommandInteraction , Client , SlashCommandBuilder, EmbedBuilder , PermissionsBitField, ActionRowBuilder,ButtonBuilder,MessageComponentCollector,ButtonStyle } = require("discord.js");
-const keyValueService = require("../../services/keyValueService");
+const { ChatInputCommandInteraction, Client, SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { getGuildReplies } = require("../../utils/autoReplyUtils");
 
-module.exports ={
-    adminsOnly:true,
+function typeLabel(type) {
+    return {
+        exact: "مطابق تمامًا",
+        contains: "يحتوي على النص",
+        startsWith: "يبدأ بـ",
+        regex: "Regex",
+    }[type] || "مطابق تمامًا";
+}
+
+module.exports = {
+    adminsOnly: true,
     data: new SlashCommandBuilder()
-    .setName('autoreply-list')
-    .setDescription('لرؤية جميع الردود'),
+        .setName('autoreply-list')
+        .setDescription('عرض جميع الردود التلقائية'),
     /**
      * @param {ChatInputCommandInteraction} interaction
      * @param {Client} client
      */
     async execute(interaction, client) {
         try {
-            await interaction.deferReply();
-            const word = interaction.options.getString(`word`)
-            const reply = interaction.options.getString(`reply`)
+            await interaction.deferReply({ ephemeral: true });
+            const data = await getGuildReplies(interaction.guild.id);
+            if (data.length > 0) {
+                const embed = new EmbedBuilder()
+                    .setTitle('جميع الردود التلقائية')
+                    .setThumbnail(interaction.guild.iconURL({ dynamic: true }))
+                    .setAuthor({ name: interaction.client.user.username, iconURL: interaction.client.user.displayAvatarURL({ dynamic: true }) })
+                    .setFooter({ text: `طلب بواسطة: ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL({ dynamic: true }) });
 
-            const data = await keyValueService.get('CookiesDB', `replys_${interaction.guild.id}`);
-            if(data){
-                if(data.length > 0){
-                    const embed = new EmbedBuilder()
-                                            .setTitle('جميع الردود التلقائية')
-                                            .setThumbnail(interaction.guild.iconURL({dynamic : true}))
-                                            .setAuthor({name : interaction.client.user.username , iconURL : interaction.client.user.displayAvatarURL({dynamic : true})})
-                                            .setFooter({text : `Requested by : ${interaction.user.username}` , iconURL : interaction.user.displayAvatarURL({dynamic : true})});
-                    await data.forEach(async(d) => {
-                       const { word , reply } = d;
-                        embed.addFields(
-                        {name : `الكلمة : \`${word}\`` , value : `**الرد :** __${reply}__`}
-                       )
-                    })
-                    embed.addFields({name : `\n` , value : `\`\`\`يوجد ${data.length} ردود في السيرفر\`\`\``})
-                    return interaction.editReply({embeds : [embed]})
-                }else{
-                    return interaction.editReply({content : `**لا توجد أي ردود تلقائية مسجلة لهذا السيرفر.**`})
-                }
-            }else{
-                return interaction.editReply({content : `**لا توجد أي ردود تلقائية مسجلة لهذا السيرفر.**`})
+                data.slice(0, 25).forEach((d, index) => {
+                    const trigger = d.trigger || d.word;
+                    const reply = d.mode === "embed" ? (d.embed?.description || d.reply || "Embed") : (d.reply || "بدون رد نصي");
+                    embed.addFields({
+                        name: `${index + 1}. Trigger: \`${trigger}\``,
+                        value: `**نوع المطابقة:** ${typeLabel(d.type)}\n**نوع الرد:** ${d.mode === "embed" ? "Embed" : "نصي"}\n**الرد:** ${String(reply).slice(0, 900)}`,
+                    });
+                });
+                embed.addFields({ name: `\n`, value: `\`\`\`يوجد ${data.length} ردود في السيرفر\`\`\`` });
+                return interaction.editReply({ embeds: [embed] });
             }
-        } catch {
-            return interaction.editReply({content:`**لقد حدث خطا اتصل بالمطورين**`})
+            return interaction.editReply({ content: `**لا توجد أي ردود تلقائية مسجلة لهذا السيرفر.**` });
+        } catch (error) {
+            console.error(error);
+            return interaction.editReply({ content: `**لقد حدث خطأ، حاول مرة أخرى.**` });
         }
     }
-}
- 
+};

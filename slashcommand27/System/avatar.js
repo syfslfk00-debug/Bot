@@ -16,10 +16,10 @@ async execute(interaction) {
     if(!user) user = interaction.user
     const embed = new EmbedBuilder()
     .setAuthor({name:user.username , iconURL:user.displayAvatarURL({dynamic:true , size:1024})})
-    .setTitle(`Avatar link`)
+    .setTitle(`رابط الصورة الشخصية`)
     .setURL(`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=1024`)
     .setImage(`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=1024`)
-    .setFooter({text:`Requested by ` + interaction.user.username , iconURL:interaction.user.displayAvatarURL({dynamic:true})})
+    .setFooter({text:`طلب بواسطة: ` + interaction.user.username , iconURL:interaction.user.displayAvatarURL({dynamic:true})})
     return interaction.editReply({embeds:[embed]})
 }
 }

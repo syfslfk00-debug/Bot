@@ -1,42 +1,43 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const keyValueService = require("../../services/keyValueService");
+const { canManageTicket, normalizeTicketMetadata } = require("../../utils/ticketUtils");
 
 module.exports = {
     adminsOnly: false,
     data: new SlashCommandBuilder()
         .setName('delete')
-        .setDescription('Delete the current ticket channel'),
+        .setDescription('حذف قناة التذكرة الحالية'),
         
     async execute(interaction) {
-        const Support = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`)?.Support;
-        if (!interaction.member.roles.cache.has(Support)) {
-            return interaction.reply({ content: ':x: Only Support', ephemeral: true });
-        } 
+        const Ticket = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`);
+        if (!Ticket) {
+            return interaction.reply({ content: 'هذه القناة ليست تذكرة', ephemeral: true });
+        }
 
-        if (!await keyValueService.has('ticketDB', `TICKET-PANEL_${interaction.channel.id}`)) {
-            return interaction.reply({ content: 'This channel isn\'t a ticket', ephemeral: true });
+        if (!canManageTicket(interaction.member, Ticket)) {
+            return interaction.reply({ content: '❌ هذا الأمر متاح لفريق الدعم أو الإداريين فقط.', ephemeral: true });
         }
 
         const embed = new EmbedBuilder()
             .setColor('Red')
-            .setDescription('Ticket will be deleted in a few seconds');
+            .setDescription('سيتم حذف التذكرة خلال ثوانٍ');
         
         await interaction.reply({ embeds: [embed] });
         
         setTimeout(() => {
-            interaction.channel.delete();
+            interaction.channel.delete().catch(() => {});
         }, 4500);
 
         const Logs = await keyValueService.get('ticketDB', `LogsRoom_${interaction.guild.id}`);
         const Log = interaction.guild.channels.cache.get(Logs);
-        const Ticket = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`);
+        const normalized = normalizeTicketMetadata(Ticket, interaction.channel);
         const logEmbed = new EmbedBuilder()
             .setAuthor({ name: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
-            .setTitle('Delete Ticket')
+            .setTitle('حذف تذكرة')
             .addFields(
-                { name: 'Name Ticket', value: `${interaction.channel.name}` },
-                { name: 'Owner Ticket', value: `${Ticket.author}` },
-                { name: 'Deleted By', value: `${interaction.user}` },
+                { name: 'اسم التذكرة', value: `${interaction.channel.name}` },
+                { name: 'صاحب التذكرة', value: normalized.ownerId ? `<@${normalized.ownerId}>` : 'غير معروف' },
+                { name: 'حذف بواسطة', value: `${interaction.user}` },
             )
             .setFooter({ text: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() });
 

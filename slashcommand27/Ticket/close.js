@@ -1,28 +1,32 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonStyle, ButtonBuilder } = require("discord.js");
 const keyValueService = require("../../services/keyValueService");
+const { canCloseTicket, getOwnerId, markTicketClosed, sendTicketCloseLog } = require("../../utils/ticketUtils");
 
 module.exports = {
     adminsOnly: false,
     data: new SlashCommandBuilder()
         .setName('close')
-        .setDescription('Close the current ticket channel'),
+        .setDescription('إغلاق قناة التذكرة الحالية'),
     
     /**
      * @param { import('discord.js').ChatInputCommandInteraction } interaction 
      */
     async execute(interaction) {
-        const supportRoleID = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`)?.Support;
-
-/*        if (!interaction.member.roles.cache.has(supportRoleID)) {
-            return interaction.reply({ content: `:x: You do not have permission to close this ticket.`, ephemeral: true });
-        }*/
-
         const ticket = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`);
+        if (!ticket) {
+            return interaction.reply({ content: `> هذه القناة ليست تذكرة`, ephemeral: true });
+        }
 
-        await interaction.channel.permissionOverwrites.edit(ticket.author, { ViewChannel: false });
+        if (!canCloseTicket(interaction.member, interaction.user, ticket)) {
+            return interaction.reply({ content: `❌ لا تمتلك صلاحية إغلاق هذه التذكرة.`, ephemeral: true });
+        }
+
+        const closedTicket = await markTicketClosed(interaction.channel, interaction.user);
+        const ownerId = getOwnerId(closedTicket);
+        if (ownerId) await interaction.channel.permissionOverwrites.edit(ownerId, { ViewChannel: false }).catch(() => {});
 
         const embed2 = new EmbedBuilder()
-            .setDescription(`تم اغلاق تذكرة بواسطة ${interaction.user}`)
+            .setDescription(`تم إغلاق التذكرة بواسطة ${interaction.user}`)
             .setColor("Yellow");
 
         const embed = new EmbedBuilder()
@@ -31,28 +35,12 @@ module.exports = {
 
         const row = new ActionRowBuilder()
             .addComponents(
-                new ButtonBuilder().setCustomId('delete').setLabel('Delete').setStyle(ButtonStyle.Danger),
-                new ButtonBuilder().setCustomId('Open').setLabel('Open').setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId('Tran').setLabel('Transcript').setStyle(ButtonStyle.Secondary)
+                new ButtonBuilder().setCustomId('delete').setLabel('حذف').setStyle(ButtonStyle.Danger),
+                new ButtonBuilder().setCustomId('Open').setLabel('فتح').setStyle(ButtonStyle.Success),
+                new ButtonBuilder().setCustomId('Tran').setLabel('نسخة نصية').setStyle(ButtonStyle.Secondary)
             );
 
         await interaction.reply({ embeds: [embed2, embed], components: [row] });
-
-        const logsRoomId = await keyValueService.get('ticketDB', `LogsRoom_${interaction.guild.id}`);
-        const logChannel = interaction.guild.channels.cache.get(logsRoomId);
-
-        if (logChannel) {
-            const logEmbed = new EmbedBuilder()
-          .setAuthor({ name: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
-          .setTitle('Close Ticket')
-          .setFields(
-            { name: `Name Ticket`, value: `${interaction.channel.name}` },
-            { name: `Owner Ticket`, value: `${ticket.author}` },
-            { name: `Close BY Ticket`, value: `${interaction.user}` },
-          )
-          .setFooter({ text: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() });
-
-            logChannel.send({ embeds: [logEmbed] });
-        }
+        await sendTicketCloseLog(interaction.guild, closedTicket, interaction.channel, interaction.user);
     }
 };

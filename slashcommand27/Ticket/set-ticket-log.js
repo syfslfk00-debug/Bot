@@ -12,8 +12,8 @@ module.exports = {
                 .setDescription('اللوغ المطلوب')
                 .setRequired(true)
                 .addChoices(
-                    { name: 'Log', value: 'log' },
-                    { name: 'Transcripte', value: 'transcripte' }
+                    { name: 'اللوق', value: 'log' },
+                    { name: 'النسخ النصية', value: 'transcripte' }
                 )
         )
         .addChannelOption(option =>
@@ -44,7 +44,7 @@ module.exports = {
 
             return interaction.reply({ content: `**تم تحديد الروم <#${room.id}> بنجاح .**` });
         } catch (error) {
-            console.error("Error setting log ticket in the database:", error);
+            console.error("خطأ أثناء تحديد روم لوق التذاكر:", error);
             return interaction.reply({ content: `حدث خطأ ما، حاول مرة أخرى.`, ephemeral: true });
         }
     }

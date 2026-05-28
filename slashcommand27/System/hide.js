@@ -10,6 +10,6 @@ async execute(interaction) {
     if(!interaction.member.permissions.has(PermissionsBitField.Flags.ManageChannels)) return interaction.reply({content:`**لا تمتلك صلاحية لفعل ذلك**` , ephemeral:true})
     await interaction.deferReply({ephemeral:false})
     interaction.channel.permissionOverwrites.edit(interaction.channel.guild.roles.everyone, { ViewChannel: false });
-    return interaction.editReply({content:`**${interaction.channel} has been hidden**`})
+    return interaction.editReply({content:`**تم إخفاء ${interaction.channel}**`})
 }
 }

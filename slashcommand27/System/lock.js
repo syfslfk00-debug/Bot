@@ -15,7 +15,7 @@ module.exports = {
 
             await interaction.channel.permissionOverwrites.edit(interaction.channel.guild.roles.everyone, { SendMessages: false });
 
-            return interaction.editReply({ content: `**${interaction.channel} has been locked**` });
+            return interaction.editReply({ content: `**تم قفل ${interaction.channel}**` });
         } catch (error) {
             interaction.reply({ content: `لقد حدث خطا اتصل بالمطورين`, ephemeral: true });
             console.log(error);

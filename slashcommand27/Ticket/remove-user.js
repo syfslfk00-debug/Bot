@@ -1,15 +1,16 @@
 const { SlashCommandBuilder } = require("discord.js");
 const keyValueService = require("../../services/keyValueService");
+const { canManageTicket } = require("../../utils/ticketUtils");
 
 module.exports = {
     adminsOnly: false,
     data: new SlashCommandBuilder()
         .setName('remove-user')
-        .setDescription('Remove a user from the current ticket channel')
+        .setDescription('إزالة عضو من قناة التذكرة الحالية')
         .addUserOption(option => 
             option
                 .setName('user')
-                .setDescription('Select the user to remove')
+                .setDescription('اختر العضو لإزالته')
                 .setRequired(true)
         ),
     
@@ -17,23 +18,21 @@ module.exports = {
      * @param { import('discord.js').ChatInputCommandInteraction } interaction 
      */
     async execute(interaction) {
+        const ticketData = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`);
+        if (!ticketData) {
+            return interaction.reply({ content: `> هذه القناة ليست تذكرة`, ephemeral: true });
+        }
 
-        const supportRoleID = await keyValueService.get('ticketDB', `TICKET-PANEL_${interaction.channel.id}`)?.Support;
-
-        if (!interaction.member.roles.cache.has(supportRoleID)) {
-            return interaction.reply({ content: `:x: You do not have permission to remove users from this ticket.`, ephemeral: true });
+        if (!canManageTicket(interaction.member, ticketData)) {
+            return interaction.reply({ content: `❌ لا تمتلك صلاحية إزالة أعضاء من هذه التذكرة.`, ephemeral: true });
         }
 
         const member = interaction.options.getMember('user');
-        if (!await keyValueService.has('ticketDB', `TICKET-PANEL_${interaction.channel.id}`)) {
-            return interaction.reply({ content: `> This channel isn't a ticket`, ephemeral: true });
-        }
-
         await interaction.channel.permissionOverwrites.edit(member.user.id, {
             ViewChannel: false,
             SendMessages: false
         });
 
-        return interaction.reply({ content: `${member} has been removed from the ticket ${interaction.channel}.` });
+        return interaction.reply({ content: `✅ تمت إزالة ${member} من التذكرة ${interaction.channel}.` });
     }
 };
